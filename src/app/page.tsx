@@ -47,13 +47,26 @@ export default function Home() {
             <p className="text-sm text-gray-500">
               © 2026 MS Choudhary Travels. All rights reserved.
             </p>
-            <div className="text-center md:text-right">
+            <div className="text-center md:text-right relative group">
               <p className="text-xs text-gray-600">
-                Developed by <span className="font-semibold text-gray-400">Rocky Saini</span>
+                Developed by{' '}
+                <a href="https://www.instagram.com/thenameisrocky____?igsh=MWM0emxiYmRmaG8waA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="font-semibold text-gray-400 hover:text-indigo-400 transition-colors cursor-pointer">
+                  Rocky Saini
+                </a>
               </p>
               <p className="text-[10px] text-gray-600 mt-0.5">
-                <span className="text-indigo-400 font-medium">Codesefod IT Solutions</span>
+                <a href="https://codesefod.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
+                  Codesefod IT Solutions
+                </a>
               </p>
+              {/* Hover card */}
+              <div className="absolute bottom-full right-0 mb-2 w-56 p-3 bg-gray-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <p className="text-sm font-bold text-white">Rocky Saini</p>
+                <p className="text-xs text-gray-400">Software Engineer</p>
+                <p className="text-xs text-gray-400 mt-1">📞 9027437997</p>
+                <a href="https://www.instagram.com/thenameisrocky____?igsh=MWM0emxiYmRmaG8waA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="text-xs text-pink-400 hover:text-pink-300 mt-1 inline-block">📸 Instagram</a>
+                <div className="absolute bottom-0 right-4 translate-y-1/2 w-2 h-2 bg-gray-800 rotate-45" />
+              </div>
             </div>
           </div>
         </div>
