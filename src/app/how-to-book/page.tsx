@@ -193,9 +193,12 @@ export default function HowToBook() {
         </div>
 
         {/* Contact */}
-        <div className="mt-10 text-center">
+        <div className="mt-10 text-center space-y-4">
+          <a href="/#trips" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-emerald-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all">
+            <Car className="w-5 h-5" /> Book Now
+          </a>
           <p className="text-gray-500 text-sm">Need help? Call us</p>
-          <a href="tel:7830673603" className="inline-flex items-center gap-2 mt-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700">
+          <a href="tel:7830673603" className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700">
             <Phone className="w-4 h-4" /> +91 7830673603
           </a>
         </div>
