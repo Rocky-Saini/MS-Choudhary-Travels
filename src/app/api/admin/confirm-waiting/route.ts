@@ -74,7 +74,7 @@ A seat opened up and we've confirmed your booking:
 
 Booking Code: ${booking.bookingCode}
 
-For help call: +91 7830673603
+For help call: +91 7830673603 (Ajeem)
 Thank you for your patience! 🙌
 — MS Choudhary Travels`
 

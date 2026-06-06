@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     const timeA = new Date(tripA.departureTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
     const timeB = new Date(tripB.departureTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
 
-    const msgA = `🔄 *Vehicle Changed*\n\nHello ${bookingA.customerName}!\n\nYour vehicle has been updated:\n🚗 New Vehicle: ${tripB.vehicle.vehicleNumber}\n👤 Driver: ${tripB.driver.name} (${tripB.driver.mobile})\n🕐 Time: ${timeB}\n\nAll other details remain same.\nFor help: +91 7830673603`
-    const msgB = `🔄 *Vehicle Changed*\n\nHello ${bookingB.customerName}!\n\nYour vehicle has been updated:\n🚗 New Vehicle: ${tripA.vehicle.vehicleNumber}\n👤 Driver: ${tripA.driver.name} (${tripA.driver.mobile})\n🕐 Time: ${timeA}\n\nAll other details remain same.\nFor help: +91 7830673603`
+    const msgA = `🔄 *Vehicle Changed*\n\nHello ${bookingA.customerName}!\n\nYour vehicle has been updated:\n🚗 New Vehicle: ${tripB.vehicle.vehicleNumber}\n👤 Driver: ${tripB.driver.name} (${tripB.driver.mobile})\n🕐 Time: ${timeB}\n\nAll other details remain same.\nFor help: +91 7830673603 (Ajeem)`
+    const msgB = `🔄 *Vehicle Changed*\n\nHello ${bookingB.customerName}!\n\nYour vehicle has been updated:\n🚗 New Vehicle: ${tripA.vehicle.vehicleNumber}\n👤 Driver: ${tripA.driver.name} (${tripA.driver.mobile})\n🕐 Time: ${timeA}\n\nAll other details remain same.\nFor help: +91 7830673603 (Ajeem)`
 
     const cleanA = bookingA.customerMobile.replace(/\D/g, '').slice(-10)
     const cleanB = bookingB.customerMobile.replace(/\D/g, '').slice(-10)

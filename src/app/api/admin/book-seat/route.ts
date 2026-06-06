@@ -94,6 +94,7 @@ Your booking is confirmed:
 
 Booking Code: ${booking.bookingCode}
 
+For help call: +91 7830673603 (Ajeem)
 Thank you! Have a safe journey. 🙌
 — MS Choudhary Travels`
 

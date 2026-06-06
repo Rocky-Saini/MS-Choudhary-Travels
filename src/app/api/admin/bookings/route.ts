@@ -105,7 +105,7 @@ Your booking has been cancelled:
 💺 Seats: ${booking.seats}
 🔖 Booking Code: ${booking.bookingCode}
 
-${booking.advancePaid > 0 ? `Your advance of ₹${booking.advancePaid} will be refunded shortly.\n\n` : ''}For any queries, call: +91 7830673603
+${booking.advancePaid > 0 ? `Your advance of ₹${booking.advancePaid} will be refunded shortly.\n\n` : ''}For any queries, call: +91 7830673603 (Ajeem)
 
 We apologize for any inconvenience.
 — MS Choudhary Travels`

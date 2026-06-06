@@ -71,7 +71,7 @@ Your vehicle has been changed:
 💺 Seats: ${booking.seats}
 
 All other details remain same.
-For help call: +91 7830673603
+For help call: +91 7830673603 (Ajeem)
 
 Thank you! 🙌`
 

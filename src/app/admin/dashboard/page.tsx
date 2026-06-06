@@ -75,6 +75,7 @@ export default function AdminDashboard() {
   const [waitingEntries, setWaitingEntries] = useState<{ id: string; customerName: string; customerMobile: string; route: string; routeId: string; dateStr: string; preferredTime: string; pickupPoint: string; dropPoint: string; seats: number }[]>([])
   const [confirmingWaiting, setConfirmingWaiting] = useState<{ id: string; customerName: string; seats: number; dateStr: string; routeId: string } | null>(null)
   const [waitingWhatsApp, setWaitingWhatsApp] = useState('')
+  const [waitingTripsForConfirm, setWaitingTripsForConfirm] = useState<DashboardData['todayTrips']>([])
   const [waitingDate, setWaitingDate] = useState(getNext7Days()[0].date)
 
   // Full Car Bookings
@@ -180,17 +181,30 @@ export default function AdminDashboard() {
 
   const confirmWaitingToTrip = async (tripId: string) => {
     if (!confirmingWaiting) return
+    setActionLoading(true)
     const res = await fetch('/api/admin/confirm-waiting', {
       method: 'POST', headers: headers(),
       body: JSON.stringify({ waitingId: confirmingWaiting.id, tripId }),
     })
     const data = await res.json()
+    setActionLoading(false)
     if (data.success) {
       setWaitingWhatsApp(data.whatsappLink)
       fetchWaiting()
       fetchDashboard()
     } else {
       alert(data.error || 'Failed to confirm')
+    }
+  }
+
+  const openConfirmWaiting = async (w: typeof waitingEntries[0]) => {
+    setConfirmingWaiting({ id: w.id, customerName: w.customerName, seats: w.seats, dateStr: w.dateStr, routeId: w.routeId })
+    setWaitingWhatsApp('')
+    // Fetch trips for this specific date
+    const r = await fetch(`/api/admin/dashboard?date=${w.dateStr}`, { headers: headers() })
+    if (r.ok) {
+      const d = await r.json()
+      setWaitingTripsForConfirm(d.todayTrips || [])
     }
   }
 
@@ -1325,7 +1339,7 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-500"><MapPin className="w-3 h-3 inline" /> {w.pickupPoint} → {w.dropPoint} • {w.seats} seat(s)</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => { setConfirmingWaiting({ id: w.id, customerName: w.customerName, seats: w.seats, dateStr: w.dateStr, routeId: w.routeId }); setDashboardDate(w.dateStr); setWaitingWhatsApp('') }}>
+                      <Button size="sm" variant="secondary" onClick={() => openConfirmWaiting(w)}>
                         Confirm Seat
                       </Button>
                       <a href={`tel:${w.customerMobile}`} className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><Phone className="w-4 h-4" /></a>
@@ -1353,9 +1367,8 @@ export default function AdminDashboard() {
                       </div>
                       <p className="text-sm font-medium text-gray-700 mb-2">Available Vehicles (same route & date):</p>
                       <div className="space-y-2">
-                        {(dashboard?.todayTrips || [])
+                        {waitingTripsForConfirm
                           .filter(t => {
-                            // Match same route direction
                             const tripRouteId = t.route.startsWith('Gangoh') ? 'route-gangoh-delhi' : 'route-delhi-gangoh'
                             return tripRouteId === confirmingWaiting.routeId && t.availableSeats >= confirmingWaiting.seats && t.status !== 'COMPLETED'
                           })
@@ -1368,12 +1381,12 @@ export default function AdminDashboard() {
                               </div>
                               <p className="text-lg font-bold">{t.availableSeats}<span className="text-xs text-gray-400">/{t.totalSeats}</span></p>
                             </div>
-                            <button onClick={() => confirmWaitingToTrip(t.id)} className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl">
-                              Confirm in {t.vehicleNumber}
+                            <button onClick={() => confirmWaitingToTrip(t.id)} disabled={actionLoading} className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl disabled:opacity-50">
+                              {actionLoading ? '⏳ Confirming...' : `Confirm in ${t.vehicleNumber}`}
                             </button>
                           </div>
                         ))}
-                        {(dashboard?.todayTrips || []).filter(t => {
+                        {waitingTripsForConfirm.filter(t => {
                           const tripRouteId = t.route.startsWith('Gangoh') ? 'route-gangoh-delhi' : 'route-delhi-gangoh'
                           return tripRouteId === confirmingWaiting.routeId && t.availableSeats >= confirmingWaiting.seats && t.status !== 'COMPLETED'
                         }).length === 0 && (
