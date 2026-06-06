@@ -128,12 +128,12 @@ export function TripSection() {
           <CalendarDays className="w-4 h-4 text-indigo-600" />
           <span className="text-sm font-medium text-gray-700">Select Date</span>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 justify-center flex-wrap">
+        <div className="flex gap-2 overflow-x-auto pb-2 justify-start sm:justify-center px-1">
           {dates.map((d) => (
             <button
               key={d.date}
               onClick={() => setSelectedDate(d.date)}
-              className={`flex flex-col items-center px-4 py-3 rounded-xl min-w-[80px] transition-all duration-200 ${
+              className={`flex flex-col items-center px-3 py-3 rounded-xl min-w-[70px] shrink-0 transition-all duration-200 ${
                 selectedDate === d.date
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
                   : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'

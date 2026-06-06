@@ -25,9 +25,9 @@ const steps = [
     icon: Clock,
     color: 'from-purple-500 to-pink-500',
     visual: (
-      <div className="flex gap-2 mt-3 overflow-x-auto">
-        {['Today', 'Tomorrow', '8 Jun', '9 Jun', '10 Jun'].map((d, i) => (
-          <div key={d} className={`px-3 py-2 rounded-xl text-xs font-bold min-w-[60px] text-center ${i === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{d}</div>
+      <div className="flex gap-2 mt-3 overflow-x-auto max-w-full pb-1">
+        {['Today', 'Tmrw', '8 Jun', '9 Jun'].map((d, i) => (
+          <div key={d} className={`px-3 py-2 rounded-xl text-xs font-bold min-w-[55px] text-center shrink-0 ${i === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{d}</div>
         ))}
       </div>
     ),
