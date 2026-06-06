@@ -30,7 +30,7 @@ export default function Home() {
                 <li className="flex items-center gap-2">🚗 Gangoh → Delhi (Daily Cab)</li>
                 <li className="flex items-center gap-2">🚗 Delhi → Gangoh (Daily Cab)</li>
                 <li className="flex items-center gap-2">🚌 Gangoh → Delhi (Bus 6:00 AM)</li>
-                <li className="flex items-center gap-2">🚌 Delhi → Gangoh (Bus 6:00 PM)</li>
+                <li className="flex items-center gap-2">🚌 Delhi → Gangoh (Bus 5:00 PM)</li>
               </ul>
             </div>
             <div>

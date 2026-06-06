@@ -188,7 +188,7 @@ export default function HowToBook() {
 
           <div className="p-5 bg-orange-50 rounded-2xl border border-orange-200">
             <h3 className="font-bold text-orange-800 mb-2">🚌 Bus Service Available</h3>
-            <p className="text-sm text-orange-700">Tourist Luxury Coach (Full AC, LED TV) — Gangoh→Delhi 6:00 AM, Delhi→Gangoh 6:00 PM. Call to book: +91 7830673603</p>
+            <p className="text-sm text-orange-700">Tourist Luxury Coach (Full AC, LED TV) — Gangoh→Delhi 6:00 AM, Delhi→Gangoh 5:00 PM. Call to book: +91 7830673603</p>
           </div>
         </div>
 
