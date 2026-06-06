@@ -49,13 +49,18 @@ export async function GET(request: NextRequest) {
     const routes = await prisma.route.findMany()
     const routeMap = Object.fromEntries(routes.map(r => [r.id, `${r.origin} → ${r.destination}`]))
 
-    const formatted = entries.map(e => ({
-      ...e,
-      route: routeMap[e.routeId] || e.routeId,
-      routeId: e.routeId,
-      preferredTime: e.preferredTime || '',
-      dateStr: e.date.toISOString().split('T')[0],
-    }))
+    const formatted = entries.map(e => {
+      // Convert stored UTC date back to IST for display
+      const istDate = new Date(e.date.getTime() + 330 * 60000)
+      const dateStr = istDate.toISOString().split('T')[0]
+      return {
+        ...e,
+        route: routeMap[e.routeId] || e.routeId,
+        routeId: e.routeId,
+        preferredTime: e.preferredTime || '',
+        dateStr,
+      }
+    })
 
     return NextResponse.json({ entries: formatted })
   } catch (error) {
