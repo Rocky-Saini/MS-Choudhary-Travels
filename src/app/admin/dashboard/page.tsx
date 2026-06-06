@@ -10,12 +10,31 @@ import { Select } from '@/components/ui/select'
 import {
   BarChart3, Car, Users, CreditCard, Calendar,
   Plus, LogOut, MapPin, Clock, Trash2, X, Check,
-  Phone, UserPlus, Route, ToggleLeft, ToggleRight, Edit, Zap, CheckSquare, Square, Bus
+  Phone, UserPlus, Route, ToggleLeft, ToggleRight, Edit, Zap, CheckSquare, Square, Bus, CalendarDays, Clock as ClockIcon
 } from 'lucide-react'
 import { Loader } from '@/components/loader'
 
 const GANGOH_STOPS = ['Gangoh', 'Chandpura', 'Fatehpur', 'Titron', 'Jalalabad', 'Baghpat']
 const DELHI_STOPS = ['Loni', 'Kashmere Gate Metro Station Gate 4', 'Kashmere Gate Metro Station Gate 3', 'Kashmere Gate Metro Station Gate 1']
+
+function getNext7Days() {
+  const days = []
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  for (let i = 0; i < 7; i++) {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    days.push({
+      date: `${yyyy}-${mm}-${dd}`,
+      label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${d.getDate()} ${monthNames[d.getMonth()]}`,
+      day: dayNames[d.getDay()],
+    })
+  }
+  return days
+}
 
 interface DashboardData {
   totalRevenue: number; totalBookings: number; pendingPayments: number; todayBookings: number
@@ -24,7 +43,7 @@ interface DashboardData {
 }
 interface TodayTrip {
   id: string; vehicleNumber: string; driverName: string; driverMobile: string; route: string
-  departureTime: string; totalSeats: number; bookedSeats: number; availableSeats: number
+  departureTime: string; date: string; totalSeats: number; bookedSeats: number; availableSeats: number
   status: string; advanceRequired: boolean
   bookings: { id: string; customerName: string; customerMobile: string; pickupPoint: string; dropPoint: string; seats: number; totalFare: number; advancePaid: number; remainingFare: number; status: string }[]
 }
@@ -35,18 +54,34 @@ interface BookingData { id: string; customerName: string; customerMobile: string
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'drivers' | 'vehicles' | 'trips' | 'bookings' | 'bus'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'drivers' | 'vehicles' | 'trips' | 'bookings' | 'bus' | 'waiting' | 'fullcar'>('dashboard')
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [trips, setTrips] = useState<TripData[]>([])
   const [bookings, setBookings] = useState<BookingData[]>([])
+  const [bookingFilterDate, setBookingFilterDate] = useState('')
+  const [bookingFilterMobile, setBookingFilterMobile] = useState('')
+  const [tripFilterDate, setTripFilterDate] = useState('')
   const [busServices, setBusServices] = useState<{ id: string; name: string; routeFrom: string; routeTo: string; departureTime: string; contactNumber: string; fare: string; description: string; isActive: boolean }[]>([])
   const [showBusForm, setShowBusForm] = useState(false)
   const [editingBus, setEditingBus] = useState<{ id: string; name: string; routeFrom: string; routeTo: string; departureTime: string; contactNumber: string; fare: string; description: string; isActive: boolean } | null>(null)
   const [busForm, setBusForm] = useState({ name: 'Travel Bus', routeFrom: '', routeTo: '', departureTime: '', contactNumber: '7830673603', fare: '', description: '' })
   const [token, setToken] = useState('')
   const [pageLoading, setPageLoading] = useState(false)
+  const [dashboardDate, setDashboardDate] = useState(getNext7Days()[0].date)
+
+  // Waiting List
+  const [waitingEntries, setWaitingEntries] = useState<{ id: string; customerName: string; customerMobile: string; route: string; routeId: string; dateStr: string; preferredTime: string; pickupPoint: string; dropPoint: string; seats: number }[]>([])
+  const [confirmingWaiting, setConfirmingWaiting] = useState<{ id: string; customerName: string; seats: number; dateStr: string; routeId: string } | null>(null)
+  const [waitingWhatsApp, setWaitingWhatsApp] = useState('')
+  const [waitingDate, setWaitingDate] = useState(getNext7Days()[0].date)
+
+  // Full Car Bookings
+  const [fullCarEntries, setFullCarEntries] = useState<{ id: string; customerName: string; customerMobile: string; pickupPoint: string; dropPoint: string; date: string; preferredTime: string; status: string; tripId: string | null }[]>([])
+  const [approvingFullCar, setApprovingFullCar] = useState<{ id: string; customerName: string } | null>(null)
+  const [fullCarWhatsApp, setFullCarWhatsApp] = useState('')
+  const [assigningTripId, setAssigningTripId] = useState<string | null>(null)
 
   // Admin Book Seat
   const [bookingTripId, setBookingTripId] = useState<string | null>(null)
@@ -72,6 +107,8 @@ export default function AdminDashboard() {
   const [showTripForm, setShowTripForm] = useState(false)
   const [editingTrip, setEditingTrip] = useState<TripData | null>(null)
   const [tripForm, setTripForm] = useState({ vehicleId: '', driverId: '', routeId: '', departureTime: '', date: '', advanceRequired: false, tag: '' })
+  const [tripActionLoading, setTripActionLoading] = useState(false)
+  const [tripSuccessMsg, setTripSuccessMsg] = useState('')
 
   // Smart Trip Creator
   const [showSmartCreator, setShowSmartCreator] = useState(false)
@@ -103,17 +140,58 @@ export default function AdminDashboard() {
       if (activeTab === 'trips') { await fetchTrips(); await fetchVehicles(); await fetchDrivers() }
       if (activeTab === 'bookings') await fetchBookings()
       if (activeTab === 'bus') await fetchBusServices()
+      if (activeTab === 'waiting') await fetchWaiting()
+      if (activeTab === 'fullcar') await fetchFullCar()
       setPageLoading(false)
     }
     load()
-  }, [activeTab, token])
+  }, [activeTab, token, dashboardDate, waitingDate])
 
-  const fetchDashboard = async () => { const r = await fetch('/api/admin/dashboard', { headers: headers() }); if (r.ok) setDashboard(await r.json()) }
+  const fetchDashboard = async () => { const r = await fetch(`/api/admin/dashboard?date=${dashboardDate}`, { headers: headers() }); if (r.ok) setDashboard(await r.json()) }
   const fetchDrivers = async () => { const r = await fetch('/api/admin/drivers', { headers: headers() }); if (r.ok) { const d = await r.json(); setDrivers(d.drivers || []) } }
   const fetchVehicles = async () => { const r = await fetch('/api/admin/vehicles', { headers: headers() }); if (r.ok) { const d = await r.json(); setVehicles(d.vehicles || []) } }
   const fetchTrips = async () => { const r = await fetch('/api/admin/trips', { headers: headers() }); if (r.ok) { const d = await r.json(); setTrips(d.trips || []) } }
   const fetchBookings = async () => { const r = await fetch('/api/admin/bookings', { headers: headers() }); if (r.ok) { const d = await r.json(); setBookings(d.bookings || []) } }
   const fetchBusServices = async () => { const r = await fetch('/api/admin/bus-services', { headers: headers() }); if (r.ok) { const d = await r.json(); setBusServices(d.services || []) } }
+  const fetchWaiting = async () => { const r = await fetch(`/api/admin/waiting-list?date=${waitingDate}`, { headers: headers() }); if (r.ok) { const d = await r.json(); setWaitingEntries(d.entries || []) } }
+  const fetchFullCar = async () => { const r = await fetch('/api/admin/full-car-booking', { headers: headers() }); if (r.ok) { const d = await r.json(); setFullCarEntries(d.entries || []) } }
+
+  const approveFullCar = async (id: string, tripId: string) => {
+    setAssigningTripId(tripId)
+    const res = await fetch('/api/admin/full-car-booking', { method: 'PUT', headers: headers(), body: JSON.stringify({ id, status: 'APPROVED', tripId }) })
+    const data = await res.json()
+    setAssigningTripId(null)
+    if (data.success) {
+      setFullCarWhatsApp(data.whatsappLink || '')
+      fetchFullCar()
+    } else { alert(data.error) }
+  }
+  const rejectFullCar = async (id: string) => {
+    await fetch('/api/admin/full-car-booking', { method: 'PUT', headers: headers(), body: JSON.stringify({ id, status: 'REJECTED' }) })
+    fetchFullCar()
+  }
+
+  const removeWaiting = async (id: string) => {
+    if (!confirm('Remove from waiting list?')) return
+    await fetch(`/api/admin/waiting-list?id=${id}`, { method: 'DELETE', headers: headers() })
+    fetchWaiting()
+  }
+
+  const confirmWaitingToTrip = async (tripId: string) => {
+    if (!confirmingWaiting) return
+    const res = await fetch('/api/admin/confirm-waiting', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ waitingId: confirmingWaiting.id, tripId }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setWaitingWhatsApp(data.whatsappLink)
+      fetchWaiting()
+      fetchDashboard()
+    } else {
+      alert(data.error || 'Failed to confirm')
+    }
+  }
 
   const saveBusService = async () => {
     if (!busForm.routeFrom || !busForm.routeTo || !busForm.departureTime) return
@@ -177,12 +255,18 @@ export default function AdminDashboard() {
   // TRIP
   const saveTrip = async () => {
     if (!tripForm.vehicleId || !tripForm.driverId || !tripForm.routeId || !tripForm.departureTime || !tripForm.date) return
+    setTripActionLoading(true)
     if (editingTrip) {
       await fetch('/api/admin/trips', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: editingTrip.id, ...tripForm }) })
+      setTripSuccessMsg('✅ Trip updated successfully!')
     } else {
       await fetch('/api/admin/trips', { method: 'POST', headers: headers(), body: JSON.stringify(tripForm) })
+      setTripSuccessMsg('✅ Trip created successfully!')
     }
-    resetTripForm(); fetchTrips()
+    setTripActionLoading(false)
+    resetTripForm()
+    fetchTrips()
+    setTimeout(() => setTripSuccessMsg(''), 3000)
   }
   const editTrip = (t: TripData) => {
     setEditingTrip(t)
@@ -200,7 +284,19 @@ export default function AdminDashboard() {
   }
   const resetTripForm = () => { setTripForm({ vehicleId: '', driverId: '', routeId: '', departureTime: '', date: '', advanceRequired: false, tag: '' }); setEditingTrip(null); setShowTripForm(false) }
   const toggleAdvance = async (tripId: string, current: boolean) => { await fetch('/api/admin/trips', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: tripId, advanceRequired: !current }) }); fetchTrips() }
-  const deleteTrip = async (tripId: string) => { if (!confirm('Delete this trip?')) return; await fetch(`/api/admin/trips?id=${tripId}`, { method: 'DELETE', headers: headers() }); fetchTrips() }
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const deleteTrip = async (tripId: string) => {
+    setDeletingTripId(tripId)
+  }
+  const confirmDeleteTrip = async () => {
+    if (!deletingTripId) return
+    setActionLoading(true)
+    await fetch(`/api/admin/trips?id=${deletingTripId}`, { method: 'DELETE', headers: headers() })
+    setActionLoading(false)
+    setDeletingTripId(null)
+    fetchTrips()
+  }
 
   // SMART CREATOR
   const eligibleVehicles = vehicles.filter(v => v.driverId && v.isActive)
@@ -241,11 +337,12 @@ export default function AdminDashboard() {
 
   const createSmartTrips = async () => {
     let count = 0
+    setActionLoading(true)
 
     if (smartMode === 'all' || smartMode === 'select') {
       const targetVehicles = smartMode === 'all' ? eligibleVehicles : eligibleVehicles.filter(v => selectedVehicleIds.includes(v.id))
-      if (targetVehicles.length === 0) { alert('No vehicles selected!'); return }
-      if (!smartForm.routeId || !smartForm.departureTime || !smartForm.dates[0]) { alert('Fill all fields!'); return }
+      if (targetVehicles.length === 0) { setActionLoading(false); alert('No vehicles selected!'); return }
+      if (!smartForm.routeId || !smartForm.departureTime || !smartForm.dates[0]) { setActionLoading(false); alert('Fill all fields!'); return }
 
       const validDates = smartForm.dates.filter(d => d)
       for (const date of validDates) {
@@ -259,7 +356,7 @@ export default function AdminDashboard() {
       }
     } else if (smartMode === 'split') {
       const validDates = splitDates.filter(d => d)
-      if (validDates.length === 0) { alert('Add at least one date!'); return }
+      if (validDates.length === 0) { setActionLoading(false); alert('Add at least one date!'); return }
 
       for (const group of splitConfig) {
         if (!group.vehicleIds.length || !group.routeId || !group.departureTime) continue
@@ -276,9 +373,11 @@ export default function AdminDashboard() {
       }
     }
 
+    setActionLoading(false)
     setShowSmartCreator(false)
+    setTripSuccessMsg(`✅ ${count} trips created successfully!`)
     fetchTrips()
-    alert(`✅ ${count} trips created!`)
+    setTimeout(() => setTripSuccessMsg(''), 4000)
   }
 
   const [cancelWhatsAppLink, setCancelWhatsAppLink] = useState('')
@@ -352,6 +451,8 @@ export default function AdminDashboard() {
     { id: 'vehicles', icon: Car, label: 'Vehicles' },
     { id: 'trips', icon: Route, label: 'Trips' },
     { id: 'bookings', icon: Calendar, label: 'Bookings' },
+    { id: 'waiting', icon: ClockIcon, label: 'Waiting List' },
+    { id: 'fullcar', icon: Car, label: 'Full Car' },
     { id: 'bus', icon: Bus, label: 'Bus Service' },
   ]
 
@@ -406,7 +507,26 @@ export default function AdminDashboard() {
             </div>
 
             {/* Today's Trips Live View */}
-            <h3 className="text-lg font-bold text-gray-900 mt-6">Today&apos;s Trips — Live Seat Status</h3>
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">Trips — Live Seat Status</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <CalendarDays className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm font-medium text-gray-700">Select Date</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+                {getNext7Days().map((d) => (
+                  <button key={d.date} onClick={() => setDashboardDate(d.date)}
+                    className={`flex flex-col items-center px-3 py-2 rounded-xl min-w-[70px] transition-all ${
+                      dashboardDate === d.date
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                        : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300'
+                    }`}>
+                    <span className={`text-[10px] uppercase font-medium ${dashboardDate === d.date ? 'text-indigo-200' : 'text-gray-400'}`}>{d.day}</span>
+                    <span className="text-xs font-bold mt-0.5">{d.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-4">
               {(dashboard.todayTrips || []).map((trip) => (
                 <Card key={trip.id} className="overflow-hidden">
@@ -446,7 +566,7 @@ export default function AdminDashboard() {
                             <h5 className="font-medium text-indigo-700 text-sm">Book Seat for Customer</h5>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               <Input placeholder="Customer Name *" value={adminBookForm.customerName} onChange={(e) => setAdminBookForm({ ...adminBookForm, customerName: e.target.value })} />
-                              <Input placeholder="Mobile (10 digits) *" value={adminBookForm.customerMobile} onChange={(e) => setAdminBookForm({ ...adminBookForm, customerMobile: e.target.value })} />
+                              <Input placeholder="Mobile (10 digits) *" value={adminBookForm.customerMobile} onChange={(e) => setAdminBookForm({ ...adminBookForm, customerMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
                               <Select value={adminBookForm.pickupPoint} onChange={(e) => setAdminBookForm({ ...adminBookForm, pickupPoint: e.target.value })}>
                                 <option value="">Select Pickup Point</option>
                                 {(trip.route.startsWith('Gangoh') ? GANGOH_STOPS : DELHI_STOPS).map(s => <option key={s} value={s}>{s}</option>)}
@@ -670,7 +790,7 @@ export default function AdminDashboard() {
                 <h3 className="font-medium">{editingDriver ? 'Edit Driver' : 'New Driver'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Input placeholder="Name" value={driverForm.name} onChange={(e) => setDriverForm({ ...driverForm, name: e.target.value })} />
-                  <Input placeholder="Mobile" value={driverForm.mobile} onChange={(e) => setDriverForm({ ...driverForm, mobile: e.target.value })} />
+                  <Input placeholder="Mobile (10 digits)" inputMode="numeric" value={driverForm.mobile} onChange={(e) => setDriverForm({ ...driverForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
                   <Input placeholder={editingDriver ? "Password (optional)" : "Password"} type="password" value={driverForm.password} onChange={(e) => setDriverForm({ ...driverForm, password: e.target.value })} />
                 </div>
                 <Button onClick={saveDriver} variant="secondary"><Check className="w-4 h-4 mr-2" />{editingDriver ? 'Update' : 'Save'}</Button>
@@ -876,8 +996,8 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                <Button onClick={createSmartTrips} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <Zap className="w-4 h-4 mr-2" />Create Trips
+                <Button onClick={createSmartTrips} className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={actionLoading}>
+                  {actionLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Creating...</> : <><Zap className="w-4 h-4 mr-2" />Create Trips</>}
                 </Button>
               </CardContent></Card>
             )}
@@ -895,13 +1015,34 @@ export default function AdminDashboard() {
                   <Input placeholder="Tag (e.g. Super Fast, Premium)" value={tripForm.tag} onChange={(e) => setTripForm({ ...tripForm, tag: e.target.value })} />
                   <label className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl"><input type="checkbox" checked={tripForm.advanceRequired} onChange={(e) => setTripForm({ ...tripForm, advanceRequired: e.target.checked })} className="w-4 h-4 accent-indigo-600" /><span className="text-sm">Advance</span></label>
                 </div>
-                <Button onClick={saveTrip} variant="secondary"><Check className="w-4 h-4 mr-2" />{editingTrip ? 'Update' : 'Create'}</Button>
+                <Button onClick={saveTrip} variant="secondary" disabled={tripActionLoading}>
+                  {tripActionLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Processing...</> : <><Check className="w-4 h-4 mr-2" />{editingTrip ? 'Update' : 'Create'}</>}
+                </Button>
               </CardContent></Card>
             )}
 
+            {/* Success Toast */}
+            {tripSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium animate-pulse">
+                {tripSuccessMsg}
+              </div>
+            )}
+
             {/* Trip List */}
+            <div className="flex items-end gap-3 mb-2">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Filter by Date</label>
+                <Input type="date" className="w-44 h-9 text-sm" value={tripFilterDate} onChange={(e) => setTripFilterDate(e.target.value)} />
+              </div>
+              {tripFilterDate && <Button variant="ghost" size="sm" onClick={() => setTripFilterDate('')}>Clear</Button>}
+            </div>
             <div className="space-y-3">
-              {trips.map((t) => (
+              {trips
+                .filter(t => {
+                  if (tripFilterDate && !t.date.startsWith(tripFilterDate)) return false
+                  return true
+                })
+                .map((t) => (
                 <Card key={t.id}><CardContent className="p-4 flex items-start justify-between flex-wrap gap-3">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1"><Car className="w-4 h-4 text-indigo-600" />{t.vehicle.vehicleNumber}</h3>
@@ -919,6 +1060,26 @@ export default function AdminDashboard() {
                 </CardContent></Card>
               ))}
             </div>
+
+            {/* Delete Trip Confirm Modal */}
+            {deletingTripId && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeletingTripId(null)} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 className="w-8 h-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Trip?</h3>
+                  <p className="text-sm text-gray-500 mb-6">This will permanently delete the trip and all its bookings. This action cannot be undone.</p>
+                  <div className="flex gap-3 justify-center">
+                    <Button variant="outline" onClick={() => setDeletingTripId(null)} disabled={actionLoading}>Cancel</Button>
+                    <Button variant="destructive" onClick={confirmDeleteTrip} disabled={actionLoading}>
+                      {actionLoading ? '⏳ Deleting...' : 'Yes, Delete'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -926,8 +1087,30 @@ export default function AdminDashboard() {
         {!pageLoading && activeTab === 'bookings' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Bookings ({bookings.length})</h2>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Filter by Date</label>
+                <Input type="date" className="w-44 h-9 text-sm" value={bookingFilterDate} onChange={(e) => setBookingFilterDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Filter by Mobile</label>
+                <Input placeholder="Mobile number" inputMode="numeric" className="w-44 h-9 text-sm" value={bookingFilterMobile} onChange={(e) => setBookingFilterMobile(e.target.value.replace(/\D/g, ''))} />
+              </div>
+              {(bookingFilterDate || bookingFilterMobile) && (
+                <Button variant="ghost" size="sm" onClick={() => { setBookingFilterDate(''); setBookingFilterMobile('') }}>Clear</Button>
+              )}
+            </div>
+
             <div className="space-y-3">
-              {bookings.map((b) => (
+              {bookings
+                .filter(b => {
+                  if (bookingFilterDate && !b.createdAt.startsWith(bookingFilterDate)) return false
+                  if (bookingFilterMobile && !b.customerMobile.includes(bookingFilterMobile)) return false
+                  return true
+                })
+                .map((b) => (
                 <Card key={b.id}><CardContent className="p-4 flex items-start justify-between flex-wrap gap-3">
                   <div>
                     <h3 className="font-bold text-gray-900 text-sm">{b.customerName}</h3>
@@ -961,6 +1144,89 @@ export default function AdminDashboard() {
                     Send Cancellation on WhatsApp
                   </a>
                   <div className="mt-4"><button onClick={() => setCancelWhatsAppLink('')} className="text-sm text-gray-500 hover:text-gray-700">Close</button></div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FULL CAR REQUESTS */}
+        {!pageLoading && activeTab === 'fullcar' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">🚗 Full Car Requests ({fullCarEntries.filter(e => e.status === 'PENDING').length} pending)</h2>
+
+            <div className="space-y-4">
+              {fullCarEntries.map((fc) => (
+                <Card key={fc.id} className={fc.status === 'APPROVED' ? 'border-emerald-200' : fc.status === 'REJECTED' ? 'border-red-200 opacity-60' : ''}><CardContent className="p-5">
+                  <div className="flex items-start justify-between flex-wrap gap-3">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-lg">{fc.customerName}</h3>
+                      <p className="text-sm text-gray-500"><Phone className="w-3 h-3 inline" /> {fc.customerMobile}</p>
+                      <p className="text-sm text-gray-600 font-medium"><MapPin className="w-3 h-3 inline text-green-500" /> {fc.pickupPoint} → <MapPin className="w-3 h-3 inline text-red-500" /> {fc.dropPoint}</p>
+                      <p className="text-sm text-gray-500">📅 {new Date(fc.date).toLocaleDateString('en-IN')} {fc.preferredTime ? `• 🕐 ${fc.preferredTime}` : ''}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant={fc.status === 'PENDING' ? 'warning' : fc.status === 'APPROVED' ? 'secondary' : 'destructive'}>{fc.status}</Badge>
+                      {fc.status === 'PENDING' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => { setApprovingFullCar({ id: fc.id, customerName: fc.customerName }); setFullCarWhatsApp(''); setDashboardDate(new Date(fc.date).toISOString().split('T')[0]) }}>
+                            ✓ Approve & Assign
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => rejectFullCar(fc.id)}>✗ Reject</Button>
+                        </div>
+                      )}
+                      {fc.status === 'APPROVED' && <p className="text-xs text-emerald-600">✓ Vehicle assigned</p>}
+                    </div>
+                  </div>
+                </CardContent></Card>
+              ))}
+              {fullCarEntries.length === 0 && <p className="text-center text-gray-500 py-8">No full car requests</p>}
+            </div>
+
+            {/* Approve Modal */}
+            {approvingFullCar && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setApprovingFullCar(null); setFullCarWhatsApp('') }} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+                  {!fullCarWhatsApp ? (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Assign Vehicle</h3>
+                          <p className="text-sm text-gray-500">For: {approvingFullCar.customerName} (Full Car)</p>
+                        </div>
+                        <button onClick={() => setApprovingFullCar(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X className="w-4 h-4" /></button>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">Select a vehicle to assign:</p>
+                      <div className="space-y-2">
+                        {(dashboard?.todayTrips || []).filter(t => t.status !== 'COMPLETED').map(t => (
+                          <div key={t.id} className="p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-300">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-gray-900 flex items-center gap-2"><Car className="w-4 h-4 text-indigo-600" />{t.vehicleNumber}</p>
+                                <p className="text-xs text-gray-500">{t.route} • {t.departureTime} • {t.driverName}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => approveFullCar(approvingFullCar.id, t.id)} disabled={assigningTripId === t.id}
+                              className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl disabled:opacity-50">
+                              {assigningTripId === t.id ? '⏳ Assigning...' : `Assign ${t.vehicleNumber}`}
+                            </button>
+                          </div>
+                        ))}
+                        {(dashboard?.todayTrips || []).length === 0 && <p className="text-sm text-gray-500 text-center py-4">No trips on selected date. Switch date on Dashboard tab first.</p>}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"><Check className="w-8 h-8 text-emerald-600" /></div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Approved!</h3>
+                      <p className="text-sm text-gray-500 mb-4">Vehicle assigned to {approvingFullCar.customerName}</p>
+                      <a href={fullCarWhatsApp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl">
+                        📱 Notify on WhatsApp
+                      </a>
+                      <div className="mt-4"><button onClick={() => { setApprovingFullCar(null); setFullCarWhatsApp('') }} className="text-sm text-gray-500">Done</button></div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1015,6 +1281,115 @@ export default function AdminDashboard() {
                 <p className="text-center text-gray-500 py-8">No bus services added yet. Add one to show on homepage.</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* WAITING LIST */}
+        {!pageLoading && activeTab === 'waiting' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">⏳ Waiting List ({waitingEntries.length})</h2>
+            <p className="text-sm text-gray-500">Customers waiting for a seat. Old entries auto-remove after their date passes.</p>
+
+            {/* Date selector */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarDays className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm font-medium text-gray-700">Select Date</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {getNext7Days().map((d) => (
+                  <button key={d.date} onClick={() => setWaitingDate(d.date)}
+                    className={`flex flex-col items-center px-3 py-2 rounded-xl min-w-[70px] transition-all ${
+                      waitingDate === d.date ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300'
+                    }`}>
+                    <span className={`text-[10px] uppercase font-medium ${waitingDate === d.date ? 'text-indigo-200' : 'text-gray-400'}`}>{d.day}</span>
+                    <span className="text-xs font-bold mt-0.5">{d.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {waitingEntries.map((w) => (
+                <Card key={w.id}><CardContent className="p-5">
+                  <div className="flex items-start justify-between flex-wrap gap-3">
+                    <div>
+                      <h3 className="font-bold text-gray-900">{w.customerName}</h3>
+                      <p className="text-sm text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{w.customerMobile}</p>
+                      <p className="text-sm text-gray-500 font-medium text-indigo-600">{w.route} • {w.dateStr} {w.preferredTime ? `• ${w.preferredTime}` : ''}</p>
+                      <p className="text-sm text-gray-500"><MapPin className="w-3 h-3 inline" /> {w.pickupPoint} → {w.dropPoint} • {w.seats} seat(s)</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => { setConfirmingWaiting({ id: w.id, customerName: w.customerName, seats: w.seats, dateStr: w.dateStr, routeId: w.routeId }); setDashboardDate(w.dateStr); setWaitingWhatsApp('') }}>
+                        Confirm Seat
+                      </Button>
+                      <a href={`tel:${w.customerMobile}`} className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><Phone className="w-4 h-4" /></a>
+                      <button onClick={() => removeWaiting(w.id)} className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-red-500"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </CardContent></Card>
+              ))}
+              {waitingEntries.length === 0 && <p className="text-center text-gray-500 py-8">No one on the waiting list for this date</p>}
+            </div>
+
+            {/* Confirm Waiting Modal */}
+            {confirmingWaiting && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setConfirmingWaiting(null); setWaitingWhatsApp('') }} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+                  {!waitingWhatsApp ? (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Confirm Seat</h3>
+                          <p className="text-sm text-gray-500">{confirmingWaiting.customerName} • {confirmingWaiting.seats} seat(s) • {new Date(confirmingWaiting.dateStr).toLocaleDateString('en-IN')}</p>
+                        </div>
+                        <button onClick={() => setConfirmingWaiting(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X className="w-4 h-4" /></button>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Available Vehicles (same route & date):</p>
+                      <div className="space-y-2">
+                        {(dashboard?.todayTrips || [])
+                          .filter(t => {
+                            // Match same route direction
+                            const tripRouteId = t.route.startsWith('Gangoh') ? 'route-gangoh-delhi' : 'route-delhi-gangoh'
+                            return tripRouteId === confirmingWaiting.routeId && t.availableSeats >= confirmingWaiting.seats && t.status !== 'COMPLETED'
+                          })
+                          .map(t => (
+                          <div key={t.id} className="p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-300">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-gray-900 flex items-center gap-2"><Car className="w-4 h-4 text-indigo-600" />{t.vehicleNumber}</p>
+                                <p className="text-xs text-gray-500">{t.route} • {t.departureTime} • {t.driverName}</p>
+                              </div>
+                              <p className="text-lg font-bold">{t.availableSeats}<span className="text-xs text-gray-400">/{t.totalSeats}</span></p>
+                            </div>
+                            <button onClick={() => confirmWaitingToTrip(t.id)} className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl">
+                              Confirm in {t.vehicleNumber}
+                            </button>
+                          </div>
+                        ))}
+                        {(dashboard?.todayTrips || []).filter(t => {
+                          const tripRouteId = t.route.startsWith('Gangoh') ? 'route-gangoh-delhi' : 'route-delhi-gangoh'
+                          return tripRouteId === confirmingWaiting.routeId && t.availableSeats >= confirmingWaiting.seats && t.status !== 'COMPLETED'
+                        }).length === 0 && (
+                          <p className="text-center text-gray-500 py-6 text-sm">No vehicle on this route with {confirmingWaiting.seats}+ free seats. Cancel a booking to free a seat, or wait for a new trip.</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"><Check className="w-8 h-8 text-emerald-600" /></div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Seat Confirmed!</h3>
+                      <p className="text-sm text-gray-500 mb-4">{confirmingWaiting.customerName} has been booked.</p>
+                      <a href={waitingWhatsApp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl">
+                        📱 Notify on WhatsApp
+                      </a>
+                      <div className="mt-4"><button onClick={() => { setConfirmingWaiting(null); setWaitingWhatsApp('') }} className="text-sm text-gray-500">Done</button></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

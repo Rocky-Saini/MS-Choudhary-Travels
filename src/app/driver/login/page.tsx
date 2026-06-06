@@ -63,11 +63,12 @@ export default function DriverLogin() {
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   type="tel"
+                  inputMode="numeric"
                   required
-                  placeholder="Enter your mobile"
+                  placeholder="Enter 10-digit mobile"
                   className="pl-10"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 />
               </div>
             </div>

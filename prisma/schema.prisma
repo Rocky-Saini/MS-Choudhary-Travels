@@ -95,6 +95,8 @@ model Booking {
   totalFare      Int
   advancePaid    Int
   remainingFare  Int
+  feeCollected   Boolean       @default(false)
+  paymentMode    String?
   status         BookingStatus @default(PENDING)
   bookingCode    String        @unique @default(cuid())
   createdAt      DateTime      @default(now())
@@ -154,6 +156,37 @@ model BusService {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model WaitingList {
+  id             String   @id @default(cuid())
+  customerName   String
+  customerMobile String
+  routeId        String
+  date           DateTime
+  preferredTime  String?
+  pickupPoint    String
+  dropPoint      String
+  seats          Int      @default(1)
+  status         String   @default("WAITING")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model FullCarBooking {
+  id             String   @id @default(cuid())
+  customerName   String
+  customerMobile String
+  pickupPoint    String
+  dropPoint      String
+  date           DateTime
+  preferredTime  String?
+  status         String   @default("PENDING")
+  tripId         String?
+  adminNotes     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 enum TripStatus {

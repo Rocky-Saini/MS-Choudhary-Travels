@@ -4,6 +4,7 @@ import { Navbar } from '@/components/navbar'
 import { HeroSection } from '@/components/hero-section'
 import { TripSection } from '@/components/trip-section'
 import { BusServiceBanner } from '@/components/bus-service-banner'
+import { FullCarSection } from '@/components/full-car-section'
 import { Phone, Mail, MapPin } from 'lucide-react'
 
 export default function Home() {
@@ -12,6 +13,7 @@ export default function Home() {
       <Navbar />
       <HeroSection />
       <TripSection />
+      <FullCarSection />
       <BusServiceBanner />
 
       {/* Footer */}

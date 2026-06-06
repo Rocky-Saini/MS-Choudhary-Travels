@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
             advancePaid: true,
             remainingFare: true,
             status: true,
+            feeCollected: true,
+            paymentMode: true,
           },
         },
       },

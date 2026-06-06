@@ -38,6 +38,7 @@ interface LocationData {
 export default function TrackBooking() {
   const [searchInput, setSearchInput] = useState('')
   const [booking, setBooking] = useState<BookingDetails | null>(null)
+  const [fullCarBooking, setFullCarBooking] = useState<{ id: string; customerName: string; pickupPoint: string; dropPoint: string; date: string; preferredTime: string; status: string; tripId: string | null } | null>(null)
   const [location, setLocation] = useState<LocationData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -47,25 +48,57 @@ export default function TrackBooking() {
     setLoading(true)
     setError('')
     setBooking(null)
+    setFullCarBooking(null)
     setLocation(null)
 
     try {
       const isCode = searchInput.length > 10
+      const isMobile = /^\d{10}$/.test(searchInput)
+      const isShortId = /^[A-Z0-9]{6,10}$/i.test(searchInput) && !isMobile
+
       const param = isCode ? `code=${searchInput}` : `mobile=${searchInput}`
+
+      // Search regular bookings
       const res = await fetch(`/api/bookings?${param}`)
       const data = await res.json()
 
       if (data.bookings && data.bookings.length > 0) {
         setBooking(data.bookings[0])
-
-        // Fetch live location if trip is in progress
         if (data.bookings[0].trip.status === 'IN_PROGRESS') {
           const locRes = await fetch(`/api/driver/location?driverId=${data.bookings[0].trip.driver.id}`)
           const locData = await locRes.json()
           if (locData.location) setLocation(locData.location)
         }
-      } else {
-        setError('No booking found with this information')
+      }
+
+      // Always search full car bookings by mobile too
+      if (isMobile) {
+        const fcRes = await fetch(`/api/full-car-booking?mobile=${searchInput}`)
+        const fcData = await fcRes.json()
+        if (fcData.entries && fcData.entries.length > 0) {
+          setFullCarBooking(fcData.entries[0])
+        }
+      }
+      // Search full car by booking ID (short code like CXFFOV9E)
+      if (isShortId || isCode) {
+        const fcRes = await fetch(`/api/full-car-booking?id=${searchInput}`)
+        const fcData = await fcRes.json()
+        if (fcData.entries && fcData.entries.length > 0) {
+          setFullCarBooking(fcData.entries[0])
+        }
+      }
+
+      // If neither found
+      if ((!data.bookings || data.bookings.length === 0) && !fullCarBooking) {
+        if (isMobile) {
+          const fcCheck = await fetch(`/api/full-car-booking?mobile=${searchInput}`)
+          const fcCheckData = await fcCheck.json()
+          if (!fcCheckData.entries || fcCheckData.entries.length === 0) {
+            setError('No booking found with this information')
+          }
+        } else if (!isShortId) {
+          setError('No booking found')
+        }
       }
     } catch {
       setError('Something went wrong')
@@ -264,6 +297,75 @@ export default function TrackBooking() {
                     <span className="font-bold text-indigo-600">₹{booking.remainingFare}</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Full Car Booking Status */}
+        {fullCarBooking && (
+          <div className="space-y-4">
+            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">🚗 Full Car Booking</CardTitle>
+                  <Badge variant={fullCarBooking.status === 'PENDING' ? 'warning' : fullCarBooking.status === 'APPROVED' ? 'secondary' : 'destructive'}>
+                    {fullCarBooking.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Customer</p>
+                      <p className="text-sm font-medium">{fullCarBooking.customerName}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Date</p>
+                      <p className="text-sm font-medium">{new Date(fullCarBooking.date).toLocaleDateString('en-IN')}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                    <span className="text-sm text-gray-700">{fullCarBooking.pickupPoint}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    <span className="text-sm text-gray-700">{fullCarBooking.dropPoint}</span>
+                  </div>
+                </div>
+                {fullCarBooking.preferredTime && (
+                  <p className="text-sm text-gray-600">🕐 Preferred: {fullCarBooking.preferredTime}</p>
+                )}
+                <p className="text-xs text-gray-400 font-mono">Booking ID: {fullCarBooking.id.slice(-8).toUpperCase()}</p>
+
+                {fullCarBooking.status === 'PENDING' && (
+                  <div className="p-4 bg-amber-50 rounded-xl text-center">
+                    <p className="text-amber-700 font-medium">⏳ Awaiting Admin Approval</p>
+                    <p className="text-xs text-amber-600 mt-1">We&apos;ll notify you once a vehicle is assigned.</p>
+                    <p className="text-xs text-gray-500 mt-2">💰 Fare: As discussed with admin. Pay to driver after ride.</p>
+                  </div>
+                )}
+                {fullCarBooking.status === 'APPROVED' && (
+                  <div className="p-4 bg-emerald-50 rounded-xl text-center">
+                    <p className="text-emerald-700 font-medium">✅ Approved! Vehicle Assigned</p>
+                    <p className="text-xs text-emerald-600 mt-1">Check WhatsApp for vehicle & driver details.</p>
+                    <p className="text-xs text-gray-500 mt-2">💰 Pay fare to driver as discussed with admin after ride.</p>
+                  </div>
+                )}
+                {fullCarBooking.status === 'REJECTED' && (
+                  <div className="p-4 bg-red-50 rounded-xl text-center">
+                    <p className="text-red-700 font-medium">❌ Request Rejected</p>
+                    <p className="text-xs text-red-600 mt-1">No vehicle available. Please try again or call: +91 7830673603</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

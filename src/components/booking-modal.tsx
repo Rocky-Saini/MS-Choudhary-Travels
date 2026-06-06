@@ -52,6 +52,10 @@ export function BookingModal({ isOpen, onClose, trip }: BookingModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (formData.customerMobile.length !== 10) {
+      alert('Please enter a valid 10-digit mobile number')
+      return
+    }
     setLoading(true)
 
     try {
@@ -164,8 +168,11 @@ export function BookingModal({ isOpen, onClose, trip }: BookingModalProps) {
                     <label className="text-sm font-medium text-gray-700 mb-1 block">Mobile Number</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input required type="tel" placeholder="10-digit mobile" className="pl-10" pattern="[0-9]{10}" value={formData.customerMobile} onChange={(e) => setFormData({ ...formData, customerMobile: e.target.value })} />
+                      <Input required type="tel" inputMode="numeric" placeholder="10-digit mobile" className="pl-10" value={formData.customerMobile} onChange={(e) => setFormData({ ...formData, customerMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
                     </div>
+                    {formData.customerMobile.length > 0 && formData.customerMobile.length < 10 && (
+                      <p className="text-xs text-red-500 mt-1">Mobile must be 10 digits</p>
+                    )}
                   </div>
 
                   <div>

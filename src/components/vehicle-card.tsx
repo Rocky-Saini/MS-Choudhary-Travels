@@ -40,8 +40,8 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-gray-900 text-lg">{trip.vehicleNumber}</h3>
-              <p className="text-sm text-gray-500">Maruti Suzuki Ertiga</p>
+              <h3 className="font-extrabold text-gray-900 text-xl">{trip.vehicleNumber}</h3>
+              <p className="text-sm font-semibold text-gray-600">Maruti Suzuki Ertiga</p>
             </div>
             <div className="flex flex-col items-end gap-1">
               <Badge variant={isFull ? 'destructive' : 'secondary'}>
@@ -60,7 +60,7 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
 
           <div className="flex items-center gap-2 mb-4 p-3 bg-indigo-50/50 rounded-xl">
             <MapPin className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-medium text-gray-700">{trip.route}</span>
+            <span className="text-sm font-bold text-gray-800">{trip.route}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -70,7 +70,7 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Driver</p>
-                <p className="text-sm font-medium text-gray-900">{trip.driverName}</p>
+                <p className="text-sm font-bold text-gray-900">{trip.driverName}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Contact</p>
-                <p className="text-sm font-medium text-gray-900">{trip.driverMobile}</p>
+                <p className="text-sm font-bold text-gray-900">{trip.driverMobile}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Departure</p>
-                <p className="text-sm font-medium text-gray-900">{trip.departureTime}</p>
+                <p className="text-sm font-bold text-gray-900">{trip.departureTime}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -97,14 +97,14 @@ export function VehicleCard({ trip, onBook }: VehicleCardProps) {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Per Seat</p>
-                <p className="text-sm font-bold text-gray-900">₹{trip.fare}</p>
+                <p className="text-sm font-extrabold text-gray-900">₹{trip.fare}</p>
               </div>
             </div>
           </div>
 
           {/* Seat counter */}
           <div className="mb-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <div className="flex justify-between text-xs font-semibold text-gray-600 mb-1">
               <span>Seat Occupancy</span>
               <span>{trip.bookedSeats}/{trip.totalSeats}</span>
             </div>

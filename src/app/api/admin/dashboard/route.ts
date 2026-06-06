@@ -14,13 +14,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // IST today
-    const now = new Date()
+    const { searchParams } = new URL(request.url)
+    const dateParam = searchParams.get('date') // YYYY-MM-DD in IST
+
     const istOffset = 330
+
+    // For stats — always today
+    const now = new Date()
     const istNow = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000)
     const todayStart = new Date(istNow.getFullYear(), istNow.getMonth(), istNow.getDate())
     const todayStartUTC = new Date(todayStart.getTime() - istOffset * 60000)
-    const tomorrowStartUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000)
+
+    // For trips — use selected date (default today)
+    let viewDayStartUTC: Date
+    if (dateParam) {
+      const [year, month, day] = dateParam.split('-').map(Number)
+      viewDayStartUTC = new Date(Date.UTC(year, month - 1, day))
+      viewDayStartUTC.setMinutes(viewDayStartUTC.getMinutes() - istOffset)
+    } else {
+      viewDayStartUTC = todayStartUTC
+    }
+    const viewDayEndUTC = new Date(viewDayStartUTC.getTime() + 24 * 60 * 60 * 1000)
 
     const [
       totalRevenue,
@@ -32,15 +46,15 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       prisma.payment.aggregate({ where: { status: 'SUCCESS' }, _sum: { amount: true } }),
       prisma.booking.count(),
-      prisma.booking.count({ where: { status: 'CONFIRMED', remainingFare: { gt: 0 } } }),
+      prisma.booking.count({ where: { status: { in: ['CONFIRMED', 'COMPLETED'] }, remainingFare: { gt: 0 }, feeCollected: false } }),
       prisma.booking.count({ where: { createdAt: { gte: todayStartUTC } } }),
       prisma.vehicle.count({ where: { isActive: true } }),
       prisma.driver.count({ where: { isActive: true } }),
     ])
 
-    // Today's trips with full details
+    // Trips for selected date with full details
     const todayTrips = await prisma.trip.findMany({
-      where: { date: { gte: todayStartUTC, lt: tomorrowStartUTC } },
+      where: { date: { gte: viewDayStartUTC, lt: viewDayEndUTC } },
       include: {
         vehicle: true,
         driver: true,
@@ -75,6 +89,7 @@ export async function GET(request: NextRequest) {
         driverMobile: t.driver.mobile,
         route: `${t.route.origin} → ${t.route.destination}`,
         departureTime: new Date(t.departureTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }),
+        date: t.date.toISOString().split('T')[0],
         totalSeats: t.totalSeats,
         bookedSeats: t.bookedSeats,
         availableSeats: t.totalSeats - t.bookedSeats,

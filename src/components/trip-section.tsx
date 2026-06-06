@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, RefreshCw, CalendarDays } from 'lucide-react'
 import { VehicleCard } from '@/components/vehicle-card'
 import { BookingModal } from '@/components/booking-modal'
+import { WaitingListModal } from '@/components/waiting-list-modal'
 import { Button } from '@/components/ui/button'
 import { Loader } from '@/components/loader'
 
@@ -51,6 +52,7 @@ export function TripSection() {
   const [loading, setLoading] = useState(true)
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isWaitingOpen, setIsWaitingOpen] = useState(false)
 
   const dates = getNext7Days()
 
@@ -78,6 +80,8 @@ export function TripSection() {
       setIsModalOpen(true)
     }
   }
+
+  const allFull = trips.length > 0 && trips.every(t => t.totalSeats - t.bookedSeats <= 0)
 
   return (
     <section id="trips" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -156,11 +160,24 @@ export function TripSection() {
       {loading ? (
         <Loader text="Finding available trips..." />
       ) : trips.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trips.map((trip) => (
-            <VehicleCard key={trip.id} trip={trip} onBook={handleBook} />
-          ))}
-        </div>
+        <>
+          {allFull && (
+            <div className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h3 className="font-bold text-amber-800 flex items-center gap-2">⏳ All Seats Full</h3>
+                <p className="text-sm text-amber-700">Join the waiting list — we&apos;ll contact you if a seat opens up.</p>
+              </div>
+              <Button onClick={() => setIsWaitingOpen(true)} className="bg-amber-500 hover:bg-amber-600">
+                Join Waiting List
+              </Button>
+            </div>
+          )}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trips.map((trip) => (
+              <VehicleCard key={trip.id} trip={trip} onBook={handleBook} />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="text-center py-16">
           <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -181,6 +198,14 @@ export function TripSection() {
           ...selectedTrip,
           availableSeats: selectedTrip.totalSeats - selectedTrip.bookedSeats,
         } : null}
+      />
+
+      {/* Waiting List Modal */}
+      <WaitingListModal
+        isOpen={isWaitingOpen}
+        onClose={() => setIsWaitingOpen(false)}
+        route={activeRoute}
+        date={selectedDate}
       />
     </section>
   )

@@ -11,7 +11,7 @@ import { Car, Play, Square, MapPin, Users, Phone, LogOut, Navigation, User, Cred
 interface Booking {
   id: string; customerName: string; customerMobile: string; pickupPoint: string
   dropPoint: string; seats: number; totalFare: number; advancePaid: number
-  remainingFare: number; status: string
+  remainingFare: number; status: string; feeCollected: boolean; paymentMode: string | null
 }
 
 interface Trip {
@@ -49,6 +49,9 @@ export default function DriverDashboard() {
   const [isSharing, setIsSharing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(getNext7Days()[0].date)
+  const [collectingBooking, setCollectingBooking] = useState<Booking | null>(null)
+  const [waitingEntries, setWaitingEntries] = useState<{ id: string; customerName: string; customerMobile: string; route: string; dateStr: string; pickupPoint: string; dropPoint: string; seats: number }[]>([])
+  const [showWaiting, setShowWaiting] = useState(false)
   const locationInterval = useRef<NodeJS.Timeout | null>(null)
   const dates = getNext7Days()
 
@@ -74,6 +77,28 @@ export default function DriverDashboard() {
       setTrips(data.trips || [])
     }
     setLoading(false)
+  }
+
+  const collectPayment = async (bookingId: string, paymentMode: 'CASH' | 'ONLINE') => {
+    await fetch('/api/driver/collect-payment', {
+      method: 'POST', headers,
+      body: JSON.stringify({ bookingId, paymentMode }),
+    })
+    setCollectingBooking(null)
+    fetchTrips()
+  }
+
+  const fetchWaiting = async () => {
+    const res = await fetch('/api/admin/waiting-list', { headers })
+    if (res.ok) {
+      const data = await res.json()
+      setWaitingEntries(data.entries || [])
+    }
+  }
+
+  const openWaiting = () => {
+    setShowWaiting(true)
+    fetchWaiting()
   }
 
   const handleTripAction = async (tripId: string, action: 'start' | 'stop') => {
@@ -130,6 +155,9 @@ export default function DriverDashboard() {
               <Navigation className="w-3 h-3 mr-1" />GPS Active
             </Badge>
           )}
+          <button onClick={openWaiting} className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium flex items-center gap-1 hover:bg-amber-100">
+            ⏳ Waiting List
+          </button>
           <button onClick={logout} className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:text-red-500">
             <LogOut className="w-4 h-4" />
           </button>
@@ -210,12 +238,27 @@ export default function DriverDashboard() {
                               <MapPin className="w-3 h-3 text-red-500" />
                               <span className="text-xs text-gray-600">{booking.dropPoint}</span>
                             </div>
-                            <div className="flex items-center gap-3 mt-2">
+                            <div className="flex items-center gap-3 mt-2 flex-wrap">
                               <span className="text-xs text-gray-500">{booking.seats} seat(s)</span>
                               <span className="text-xs text-gray-500">₹{booking.totalFare}</span>
                               {booking.advancePaid > 0 && <Badge variant="default" className="text-[10px]">Adv: ₹{booking.advancePaid}</Badge>}
-                              {booking.remainingFare > 0 && <Badge variant="warning" className="text-[10px]"><CreditCard className="w-3 h-3 mr-1" />Due: ₹{booking.remainingFare}</Badge>}
+                              {booking.feeCollected ? (
+                                <Badge variant="secondary" className="text-[10px]">✓ Paid ({booking.paymentMode})</Badge>
+                              ) : booking.remainingFare > 0 ? (
+                                <Badge variant="warning" className="text-[10px]"><CreditCard className="w-3 h-3 mr-1" />Due: ₹{booking.remainingFare}</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">✓ Fully Paid</Badge>
+                              )}
                             </div>
+                            {/* Mark Paid button */}
+                            {!booking.feeCollected && booking.remainingFare > 0 && (
+                              <button
+                                onClick={() => setCollectingBooking(booking)}
+                                className="mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors"
+                              >
+                                💰 Collect ₹{booking.remainingFare} & Mark Paid
+                              </button>
+                            )}
                           </div>
                           <a href={`tel:${booking.customerMobile}`} className="flex items-center gap-2 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-colors ml-3">
                             <Phone className="w-4 h-4" /><span className="text-xs font-medium hidden sm:inline">Call</span>
@@ -250,6 +293,76 @@ export default function DriverDashboard() {
               <p className="text-gray-500">No trips for this date</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Payment Collection Modal */}
+      {collectingBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setCollectingBooking(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="text-center mb-5">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <CreditCard className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Collect Payment</h3>
+              <p className="text-sm text-gray-500">{collectingBooking.customerName}</p>
+              <p className="text-3xl font-extrabold text-emerald-600 mt-2">₹{collectingBooking.remainingFare}</p>
+              <p className="text-xs text-gray-400">to be collected</p>
+            </div>
+
+            <p className="text-sm font-medium text-gray-700 mb-3 text-center">How did the customer pay?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => collectPayment(collectingBooking.id, 'CASH')}
+                className="flex flex-col items-center gap-2 p-4 border-2 border-emerald-200 rounded-xl hover:bg-emerald-50 transition-colors"
+              >
+                <span className="text-2xl">💵</span>
+                <span className="text-sm font-semibold text-gray-900">Cash</span>
+              </button>
+              <button
+                onClick={() => collectPayment(collectingBooking.id, 'ONLINE')}
+                className="flex flex-col items-center gap-2 p-4 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 transition-colors"
+              >
+                <span className="text-2xl">📱</span>
+                <span className="text-sm font-semibold text-gray-900">Online / UPI</span>
+              </button>
+            </div>
+
+            <button onClick={() => setCollectingBooking(null)} className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Waiting List Modal (Driver view) */}
+      {showWaiting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowWaiting(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">⏳ Waiting List ({waitingEntries.length})</h3>
+                <p className="text-xs text-gray-500">Agar tumhari gadi mein seat khali hai, admin se baat karke inhe le sakte ho</p>
+              </div>
+              <button onClick={() => setShowWaiting(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><LogOut className="w-4 h-4 rotate-180" /></button>
+            </div>
+            <div className="space-y-3">
+              {waitingEntries.map((w) => (
+                <div key={w.id} className="p-3 border border-gray-100 rounded-xl flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{w.customerName}</p>
+                    <p className="text-xs text-gray-500">{w.route} • {new Date(w.dateStr).toLocaleDateString('en-IN')}</p>
+                    <p className="text-xs text-gray-500">{w.pickupPoint} → {w.dropPoint} • {w.seats} seat(s)</p>
+                  </div>
+                  <a href={`tel:${w.customerMobile}`} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs flex items-center gap-1">
+                    <Phone className="w-3 h-3" />Call
+                  </a>
+                </div>
+              ))}
+              {waitingEntries.length === 0 && <p className="text-center text-gray-500 py-6 text-sm">No one on the waiting list</p>}
+            </div>
+            <p className="text-xs text-gray-400 mt-4 text-center">To confirm a waiting passenger, contact admin: +91 7830673603</p>
+          </div>
         </div>
       )}
     </div>
