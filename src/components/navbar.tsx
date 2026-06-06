@@ -19,6 +19,9 @@ export function Navbar() {
             <Link href="/" className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
               Home
             </Link>
+            <Link href="/how-to-book" className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
+              How to Book
+            </Link>
             <Link href="/track" className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
               Track Booking
             </Link>
@@ -44,6 +47,9 @@ export function Navbar() {
           <div className="md:hidden py-4 space-y-2 border-t border-gray-100">
             <Link href="/" className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-indigo-50 rounded-lg">
               Home
+            </Link>
+            <Link href="/how-to-book" className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-indigo-50 rounded-lg">
+              How to Book
             </Link>
             <Link href="/track" className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-indigo-50 rounded-lg">
               Track Booking
