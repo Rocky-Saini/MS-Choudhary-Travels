@@ -87,6 +87,7 @@ export default function AdminDashboard() {
   const [bookingTripId, setBookingTripId] = useState<string | null>(null)
   const [adminBookForm, setAdminBookForm] = useState({ customerName: '', customerMobile: '', pickupPoint: '', dropPoint: '', seats: 1 })
   const [lastWhatsAppLink, setLastWhatsAppLink] = useState('')
+  const [bookingSeatLoading, setBookingSeatLoading] = useState(false)
 
   // Shift Passenger
   const [shiftingBooking, setShiftingBooking] = useState<{ id: string; customerName: string; seats: number; currentTripId: string } | null>(null)
@@ -393,11 +394,13 @@ export default function AdminDashboard() {
   // ADMIN BOOK SEAT
   const adminBookSeat = async () => {
     if (!bookingTripId || !adminBookForm.customerName || !adminBookForm.customerMobile) return
+    setBookingSeatLoading(true)
     const res = await fetch('/api/admin/book-seat', {
       method: 'POST', headers: headers(),
       body: JSON.stringify({ tripId: bookingTripId, ...adminBookForm }),
     })
     const data = await res.json()
+    setBookingSeatLoading(false)
     if (data.success) {
       setLastWhatsAppLink(data.whatsappLink)
       setAdminBookForm({ customerName: '', customerMobile: '', pickupPoint: '', dropPoint: '', seats: 1 })
@@ -578,7 +581,9 @@ export default function AdminDashboard() {
                               <Input type="number" min={1} max={trip.availableSeats} placeholder="Seats" value={adminBookForm.seats} onChange={(e) => setAdminBookForm({ ...adminBookForm, seats: parseInt(e.target.value) || 1 })} />
                             </div>
                             <div className="flex gap-2">
-                              <Button onClick={adminBookSeat} variant="secondary" size="sm"><Check className="w-4 h-4 mr-1" />Confirm Booking</Button>
+                              <Button onClick={adminBookSeat} variant="secondary" size="sm" disabled={bookingSeatLoading}>
+                                {bookingSeatLoading ? <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />Booking...</> : <><Check className="w-4 h-4 mr-1" />Confirm Booking</>}
+                              </Button>
                               <Button onClick={() => { setBookingTripId(null); setLastWhatsAppLink('') }} variant="ghost" size="sm"><X className="w-4 h-4 mr-1" />Cancel</Button>
                             </div>
                           </>
