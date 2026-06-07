@@ -19,7 +19,6 @@ export async function DELETE(request: NextRequest) {
       await prisma.notification.deleteMany({})
       await prisma.payment.deleteMany({})
       await prisma.booking.deleteMany({})
-      // Reset all trip booked seats to 0
       await prisma.trip.updateMany({ data: { bookedSeats: 0 } })
       return NextResponse.json({ success: true, message: 'All bookings cleared' })
     }
@@ -32,6 +31,34 @@ export async function DELETE(request: NextRequest) {
     if (type === 'fullcar') {
       await prisma.fullCarBooking.deleteMany({})
       return NextResponse.json({ success: true, message: 'Full car requests cleared' })
+    }
+
+    if (type === 'trips') {
+      await prisma.notification.deleteMany({})
+      await prisma.payment.deleteMany({})
+      await prisma.booking.deleteMany({})
+      await prisma.trip.deleteMany({})
+      return NextResponse.json({ success: true, message: 'All trips cleared' })
+    }
+
+    // Single item delete
+    const id = searchParams.get('id')
+    if (type === 'booking' && id) {
+      await prisma.notification.deleteMany({ where: { bookingId: id } })
+      await prisma.payment.deleteMany({ where: { bookingId: id } })
+      const booking = await prisma.booking.delete({ where: { id } })
+      await prisma.trip.update({ where: { id: booking.tripId }, data: { bookedSeats: { decrement: booking.seats } } })
+      return NextResponse.json({ success: true })
+    }
+
+    if (type === 'waiting-item' && id) {
+      await prisma.waitingList.delete({ where: { id } })
+      return NextResponse.json({ success: true })
+    }
+
+    if (type === 'fullcar-item' && id) {
+      await prisma.fullCarBooking.delete({ where: { id } })
+      return NextResponse.json({ success: true })
     }
 
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 })

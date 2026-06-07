@@ -879,6 +879,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <h2 className="text-2xl font-bold text-gray-900">Trips ({trips.length})</h2>
               <div className="flex gap-2">
+                {trips.length > 0 && <Button variant="destructive" size="sm" onClick={async () => { if (!confirm('Delete ALL trips & their bookings? Cannot be undone.')) return; await fetch('/api/admin/clear-data?type=trips', { method: 'DELETE', headers: headers() }); fetchTrips(); fetchDashboard() }}>🗑️ Clear All</Button>}
                 <Button variant="secondary" onClick={() => { setShowSmartCreator(!showSmartCreator); setShowTripForm(false) }}>
                   <Zap className="w-4 h-4 mr-2" />{showSmartCreator ? 'Close' : 'Smart Create'}
                 </Button>
@@ -1149,6 +1150,7 @@ export default function AdminDashboard() {
                     <Badge variant={b.status === 'CONFIRMED' ? 'secondary' : b.status === 'CANCELLED' ? 'destructive' : b.status === 'COMPLETED' ? 'default' : 'warning'}>{b.status}</Badge>
                     {b.status === 'PENDING' && <><Button size="sm" variant="secondary" onClick={() => updateBookingStatus(b.id, 'CONFIRMED')}>✓</Button><Button size="sm" variant="destructive" onClick={() => updateBookingStatus(b.id, 'CANCELLED')}>✗</Button></>}
                     {b.status === 'CONFIRMED' && <Button size="sm" variant="destructive" onClick={() => updateBookingStatus(b.id, 'CANCELLED')}>Cancel</Button>}
+                    <button onClick={async () => { if (!confirm('Delete this booking?')) return; await fetch(`/api/admin/clear-data?type=booking&id=${b.id}`, { method: 'DELETE', headers: headers() }); fetchBookings(); fetchDashboard() }} className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100"><Trash2 className="w-3 h-3" /></button>
                   </div>
                 </CardContent></Card>
               ))}
@@ -1203,6 +1205,7 @@ export default function AdminDashboard() {
                             ✓ Approve & Assign
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => rejectFullCar(fc.id)}>✗ Reject</Button>
+                          <button onClick={async () => { if (!confirm('Delete this request?')) return; await fetch(`/api/admin/clear-data?type=fullcar-item&id=${fc.id}`, { method: 'DELETE', headers: headers() }); fetchFullCar() }} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       )}
                       {fc.status === 'APPROVED' && <p className="text-xs text-emerald-600">✓ Vehicle assigned</p>}
