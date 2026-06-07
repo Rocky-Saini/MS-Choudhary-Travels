@@ -35,9 +35,10 @@ interface WaitingListModalProps {
   onClose: () => void
   route: 'gangoh-delhi' | 'delhi-gangoh'
   date: string
+  reason?: 'full' | 'no-trips'
 }
 
-export function WaitingListModal({ isOpen, onClose, route, date: initialDate }: WaitingListModalProps) {
+export function WaitingListModal({ isOpen, onClose, route, date: initialDate, reason = 'full' }: WaitingListModalProps) {
   const [formData, setFormData] = useState({ customerName: '', customerMobile: '', pickupPoint: '', dropPoint: '', seats: 1, date: initialDate, preferredTime: route === 'gangoh-delhi' ? '5:00 AM' : '4:00 PM' })
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
@@ -98,7 +99,9 @@ export function WaitingListModal({ isOpen, onClose, route, date: initialDate }: 
               {!done ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="p-3 bg-amber-50 rounded-xl text-sm text-amber-700">
-                    All seats are full. Join the waiting list — we&apos;ll contact you if a seat opens up.
+                    {reason === 'no-trips'
+                      ? 'No trips scheduled yet for this date. Join the waiting list — once trips are added, your seat will be confirmed automatically.'
+                      : 'All seats are full. Join the waiting list — we\'ll contact you if a seat opens up.'}
                   </div>
 
                   {/* Travel Date */}

@@ -146,8 +146,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Calculate total with Razorpay fee + GST (user bears the cost)
+    const razorpayFee = Math.ceil(advanceAmount * 0.02)
+    const gst = Math.ceil(razorpayFee * 0.18)
+    const totalCharge = advanceAmount + razorpayFee + gst
+
     const order = await razorpay.orders.create({
-      amount: advanceAmount * 100,
+      amount: totalCharge * 100, // in paise (advance + fee + GST)
       currency: 'INR',
       receipt: booking.id,
       notes: {

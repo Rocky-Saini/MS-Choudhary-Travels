@@ -215,33 +215,54 @@ export function BookingModal({ isOpen, onClose, trip }: BookingModalProps) {
                   </div>
 
                   {/* Fare Info */}
-                  <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total Fare ({formData.seats} × ₹{trip.fare})</span>
-                      <span className="font-medium">₹{totalFare}</span>
-                    </div>
-                    {trip.advanceRequired ? (
-                      <>
+                  {/* Fare Breakdown */}
+                  {(() => {
+                    const advanceBase = formData.seats * 100
+                    const razorpayFee = Math.ceil(advanceBase * 0.02)
+                    const gst = Math.ceil(razorpayFee * 0.18)
+                    const totalAdvance = advanceBase + razorpayFee + gst
+                    return (
+                      <div className="bg-indigo-50/50 rounded-xl p-4 space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Advance Payment</span>
-                          <span className="font-medium text-indigo-600">₹{formData.seats * 100}</span>
+                          <span className="text-gray-600">Total Fare ({formData.seats} × ₹{trip.fare})</span>
+                          <span className="font-medium">₹{totalFare}</span>
                         </div>
-                        <div className="flex justify-between text-sm border-t border-indigo-100 pt-2">
-                          <span className="text-gray-600">Remaining (pay to driver)</span>
-                          <span className="font-medium">₹{totalFare - formData.seats * 100}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex justify-between text-sm border-t border-indigo-100 pt-2">
-                        <span className="text-gray-600">Payment</span>
-                        <span className="font-medium text-emerald-600">Pay after journey ✓</span>
+                        {trip.advanceRequired ? (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Advance</span>
+                              <span className="font-medium">₹{advanceBase}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-500">
+                              <span>Payment Gateway Fee (2%)</span>
+                              <span>₹{razorpayFee}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-500">
+                              <span>GST (18% on fee)</span>
+                              <span>₹{gst}</span>
+                            </div>
+                            <div className="flex justify-between text-sm border-t border-indigo-100 pt-2 font-bold">
+                              <span className="text-indigo-700">You Pay Now</span>
+                              <span className="text-indigo-700">₹{totalAdvance}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Remaining (pay to driver)</span>
+                              <span className="font-medium">₹{totalFare - advanceBase}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between text-sm border-t border-indigo-100 pt-2">
+                            <span className="text-gray-600">Payment</span>
+                            <span className="font-medium text-emerald-600">Pay after journey ✓</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    )
+                  })()}
 
                   <Button type="submit" className="w-full" size="lg" disabled={loading}>
                     {trip.advanceRequired ? (
-                      <><CreditCard className="w-4 h-4 mr-2" />{loading ? 'Processing...' : `Pay ₹${formData.seats * 100} Advance`}</>
+                      <><CreditCard className="w-4 h-4 mr-2" />{loading ? 'Processing...' : `Pay ₹${formData.seats * 100 + Math.ceil(formData.seats * 100 * 0.02) + Math.ceil(Math.ceil(formData.seats * 100 * 0.02) * 0.18)} Advance`}</>
                     ) : (
                       <><CheckCircle className="w-4 h-4 mr-2" />{loading ? 'Booking...' : 'Confirm Booking'}</>
                     )}

@@ -177,8 +177,8 @@ export function TripSection() {
           {showWaitingOption && (
             <div className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h3 className="font-bold text-amber-800 flex items-center gap-2">⏳ All Seats Full</h3>
-                <p className="text-sm text-amber-700">Join the waiting list — we&apos;ll contact you if a seat opens up.</p>
+                <h3 className="font-bold text-amber-800 flex items-center gap-2">{noTrips ? '📅 No Trips Scheduled Yet' : '⏳ All Seats Full'}</h3>
+                <p className="text-sm text-amber-700">{noTrips ? 'Once trips are scheduled, your seat will be added automatically.' : 'Join the waiting list — we\'ll contact you if a seat opens up.'}</p>
               </div>
               <Button onClick={() => setIsWaitingOpen(true)} className="bg-amber-500 hover:bg-amber-600">
                 Join Waiting List
@@ -226,6 +226,7 @@ export function TripSection() {
         onClose={() => setIsWaitingOpen(false)}
         route={activeRoute}
         date={selectedDate}
+        reason={noTrips ? 'no-trips' : 'full'}
       />
     </section>
   )
