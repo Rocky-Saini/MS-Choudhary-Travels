@@ -306,6 +306,8 @@ export default function AdminDashboard() {
   const toggleAdvance = async (tripId: string, current: boolean) => { await fetch('/api/admin/trips', { method: 'PUT', headers: headers(), body: JSON.stringify({ id: tripId, advanceRequired: !current }) }); fetchTrips() }
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [clearTripsClicks, setClearTripsClicks] = useState(0)
+  const [showClearTripsConfirm, setShowClearTripsConfirm] = useState(false)
   const deleteTrip = async (tripId: string) => {
     setDeletingTripId(tripId)
   }
@@ -498,7 +500,7 @@ export default function AdminDashboard() {
         <button onClick={logout} className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500"><LogOut className="w-4 h-4" />Logout</button>
       </div>
 
-      <div className="lg:ml-64 p-4 md:p-6">
+      <div className="lg:ml-64 p-4 md:p-6 overflow-x-hidden">
         <div className="lg:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-3 sticky top-0 z-20 bg-gray-50 pt-2">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)}
@@ -880,13 +882,18 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <h2 className="text-2xl font-bold text-gray-900">Trips ({trips.length})</h2>
-              <div className="flex gap-2">
-                {trips.length > 0 && <Button variant="destructive" size="sm" onClick={async () => { if (!confirm('Delete ALL trips & their bookings? Cannot be undone.')) return; await fetch('/api/admin/clear-data?type=trips', { method: 'DELETE', headers: headers() }); fetchTrips(); fetchDashboard() }}>🗑️ Clear All</Button>}
-                <Button variant="secondary" onClick={() => { setShowSmartCreator(!showSmartCreator); setShowTripForm(false) }}>
-                  <Zap className="w-4 h-4 mr-2" />{showSmartCreator ? 'Close' : 'Smart Create'}
+              <div className="flex gap-2 flex-wrap">
+                {trips.length > 0 && <Button variant="destructive" size="sm" onClick={() => {
+                  const next = clearTripsClicks + 1
+                  setClearTripsClicks(next)
+                  if (next >= 3) { setShowClearTripsConfirm(true); setClearTripsClicks(0) }
+                  setTimeout(() => setClearTripsClicks(0), 2000)
+                }}>{clearTripsClicks === 0 ? '🗑️ Clear' : clearTripsClicks === 1 ? '⚠️ Click 2 more' : '⚠️ Click 1 more'}</Button>}
+                <Button variant="secondary" size="sm" onClick={() => { setShowSmartCreator(!showSmartCreator); setShowTripForm(false) }}>
+                  <Zap className="w-3 h-3 mr-1" />{showSmartCreator ? 'Close' : 'Smart'}
                 </Button>
-                <Button onClick={() => { resetTripForm(); setShowTripForm(!showTripForm); setShowSmartCreator(false) }}>
-                  {showTripForm ? <><X className="w-4 h-4 mr-2" />Cancel</> : <><Plus className="w-4 h-4 mr-2" />Single</>}
+                <Button size="sm" onClick={() => { resetTripForm(); setShowTripForm(!showTripForm); setShowSmartCreator(false) }}>
+                  {showTripForm ? <><X className="w-3 h-3 mr-1" />Cancel</> : <><Plus className="w-3 h-3 mr-1" />Single</>}
                 </Button>
               </div>
             </div>
@@ -1102,6 +1109,34 @@ export default function AdminDashboard() {
                     <Button variant="outline" onClick={() => setDeletingTripId(null)} disabled={actionLoading}>Cancel</Button>
                     <Button variant="destructive" onClick={confirmDeleteTrip} disabled={actionLoading}>
                       {actionLoading ? '⏳ Deleting...' : 'Yes, Delete'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Clear All Trips Confirm Modal */}
+            {showClearTripsConfirm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowClearTripsConfirm(false)} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 className="w-8 h-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Clear All Trips?</h3>
+                  <p className="text-sm text-red-600 font-medium mb-1">⚠️ This is irreversible!</p>
+                  <p className="text-sm text-gray-500 mb-6">All trips, bookings, payments & notifications will be permanently deleted.</p>
+                  <div className="flex gap-3 justify-center">
+                    <Button variant="outline" onClick={() => setShowClearTripsConfirm(false)}>No, Keep</Button>
+                    <Button variant="destructive" onClick={async () => {
+                      setActionLoading(true)
+                      await fetch('/api/admin/clear-data?type=trips', { method: 'DELETE', headers: headers() })
+                      setActionLoading(false)
+                      setShowClearTripsConfirm(false)
+                      fetchTrips()
+                      fetchDashboard()
+                    }} disabled={actionLoading}>
+                      {actionLoading ? '⏳ Deleting...' : 'Yes, Delete All'}
                     </Button>
                   </div>
                 </div>

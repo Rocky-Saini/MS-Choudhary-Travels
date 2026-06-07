@@ -8,6 +8,7 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600
 export const metadata: Metadata = {
   title: "MS Choudhary Travels - Premium Gangoh ↔ Delhi Cab & Bus Service",
   description: "Book your seat with MS Choudhary Travels. Premium Maruti Suzuki Ertiga fleet & Luxury Coach bus. Daily intercity service between Gangoh and Delhi.",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({
@@ -20,7 +21,7 @@ export default function RootLayout({
       <head>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
       </head>
-      <body className={`${poppins.className} antialiased bg-white`}>
+      <body className={`${poppins.className} antialiased bg-white overflow-x-hidden`}>
         {children}
       </body>
     </html>
