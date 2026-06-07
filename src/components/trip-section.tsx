@@ -82,6 +82,8 @@ export function TripSection() {
   }
 
   const allFull = trips.length > 0 && trips.every(t => t.totalSeats - t.bookedSeats <= 0)
+  const noTrips = !loading && trips.length === 0
+  const showWaitingOption = allFull || noTrips
 
   return (
     <section id="trips" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -161,7 +163,7 @@ export function TripSection() {
         <Loader text="Finding available trips..." />
       ) : trips.length > 0 ? (
         <>
-          {allFull && (
+          {showWaitingOption && (
             <div className="mb-6 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h3 className="font-bold text-amber-800 flex items-center gap-2">⏳ All Seats Full</h3>
@@ -182,7 +184,12 @@ export function TripSection() {
         <div className="text-center py-16">
           <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">No trips available for this date.</p>
-          <p className="text-gray-400 text-sm mt-2">Try selecting another date or route.</p>
+          <p className="text-gray-400 text-sm mt-2">Try selecting another date or join the waiting list.</p>
+          <div className="mt-6">
+            <Button onClick={() => setIsWaitingOpen(true)} className="bg-amber-500 hover:bg-amber-600">
+              ⏳ Join Waiting List
+            </Button>
+          </div>
         </div>
       )}
 
