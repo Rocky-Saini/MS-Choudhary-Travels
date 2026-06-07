@@ -597,7 +597,9 @@ export default function AdminDashboard() {
                                 <option value="">Select Drop Point</option>
                                 {(trip.route.startsWith('Gangoh') ? DELHI_STOPS : GANGOH_STOPS).map(s => <option key={s} value={s}>{s}</option>)}
                               </Select>
-                              <Input type="number" min={1} max={trip.availableSeats} placeholder="Seats" value={adminBookForm.seats} onChange={(e) => setAdminBookForm({ ...adminBookForm, seats: parseInt(e.target.value) || 1 })} />
+                              <Select value={adminBookForm.seats} onChange={(e) => setAdminBookForm({ ...adminBookForm, seats: parseInt(e.target.value) || 1 })}>
+                                {Array.from({ length: Math.min(trip.availableSeats, 7) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} {n === 1 ? 'Seat' : 'Seats'}</option>)}
+                              </Select>
                             </div>
                             <div className="flex gap-2">
                               <Button onClick={adminBookSeat} variant="secondary" size="sm" disabled={bookingSeatLoading}>

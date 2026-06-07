@@ -177,8 +177,10 @@ export function WaitingListModal({ isOpen, onClose, route, date: initialDate }: 
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-1 block">Seats Needed</label>
                     <div className="relative">
-                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input required type="number" min={1} max={7} className="pl-10" value={formData.seats} onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) || 1 })} />
+                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                      <Select required className="pl-10" value={formData.seats} onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) || 1 })}>
+                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n} {n === 1 ? 'Seat' : 'Seats'}</option>)}
+                      </Select>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" size="lg" disabled={loading}>
