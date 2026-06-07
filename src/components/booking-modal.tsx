@@ -204,8 +204,12 @@ export function BookingModal({ isOpen, onClose, trip }: BookingModalProps) {
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-1 block">Number of Seats</label>
                     <div className="relative">
-                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input required type="number" min={1} max={trip.availableSeats} className="pl-10" value={formData.seats} onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) || 1 })} />
+                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                      <Select required className="pl-10" value={formData.seats} onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) || 1 })}>
+                        {Array.from({ length: Math.min(trip.availableSeats, 7) }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>{n} {n === 1 ? 'Seat' : 'Seats'}</option>
+                        ))}
+                      </Select>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{trip.availableSeats} seats available</p>
                   </div>
