@@ -1205,10 +1205,10 @@ export default function AdminDashboard() {
                             ✓ Approve & Assign
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => rejectFullCar(fc.id)}>✗ Reject</Button>
-                          <button onClick={async () => { if (!confirm('Delete this request?')) return; await fetch(`/api/admin/clear-data?type=fullcar-item&id=${fc.id}`, { method: 'DELETE', headers: headers() }); fetchFullCar() }} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       )}
                       {fc.status === 'APPROVED' && <p className="text-xs text-emerald-600">✓ Vehicle assigned</p>}
+                      <button onClick={async () => { if (!confirm('Delete this request?')) return; await fetch(`/api/admin/clear-data?type=fullcar-item&id=${fc.id}`, { method: 'DELETE', headers: headers() }); fetchFullCar() }} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-100"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </CardContent></Card>
