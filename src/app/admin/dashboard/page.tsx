@@ -499,12 +499,12 @@ export default function AdminDashboard() {
       </div>
 
       <div className="lg:ml-64 p-4 md:p-6">
-        <div className="lg:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="lg:hidden flex items-center gap-2 mb-6 overflow-x-auto pb-3 sticky top-0 z-20 bg-gray-50 pt-2">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{tab.label}</button>
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap border-2 transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}`}>{tab.label}</button>
           ))}
-          <button onClick={logout} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 whitespace-nowrap">Logout</button>
+          <button onClick={logout} className="px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-red-600 border-2 border-red-200 whitespace-nowrap">Logout</button>
         </div>
 
         {/* Page Loader */}
