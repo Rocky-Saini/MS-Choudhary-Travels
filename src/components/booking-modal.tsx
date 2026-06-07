@@ -106,8 +106,14 @@ export function BookingModal({ isOpen, onClose, trip }: BookingModalProps) {
             theme: { color: '#4f46e5' },
           }
 
-          const razorpay = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void } }).Razorpay(options)
-          razorpay.open()
+          // Check if Razorpay is available (Safari may not support)
+          const RazorpayClass = (window as unknown as { Razorpay?: new (opts: typeof options) => { open: () => void } }).Razorpay
+          if (!RazorpayClass) {
+            alert('Payment gateway not supported on this browser. Please use Chrome, Firefox, or any Android browser.')
+            return
+          }
+          const razorpayInstance = new RazorpayClass(options)
+          razorpayInstance.open()
         }
       }
     } catch (error) {
