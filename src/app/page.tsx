@@ -51,10 +51,10 @@ export default function Home() {
             {/* Support Developer */}
             <div className="flex items-center gap-3 bg-gray-800 px-4 py-2.5 rounded-xl flex-wrap justify-center">
               <span className="text-xs text-gray-400">☕ Support Developer</span>
-              <a href="https://pay.google.com/gp/p/ui/pay?pa=codesefod@ybl&pn=Rocky+Saini&am=20&cu=INR&tn=Support+Developer" target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹20</a>
-              <a href="https://pay.google.com/gp/p/ui/pay?pa=codesefod@ybl&pn=Rocky+Saini&am=50&cu=INR&tn=Support+Developer" target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹50</a>
-              <a href="https://pay.google.com/gp/p/ui/pay?pa=codesefod@ybl&pn=Rocky+Saini&am=100&cu=INR&tn=Support+Developer" target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹100</a>
-              <a href="https://pay.google.com/gp/p/ui/pay?pa=codesefod@ybl&pn=Rocky+Saini&cu=INR&tn=Support+Developer" target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-colors">Custom</a>
+              <a href="upi://pay?pa=codesefod@ybl&pn=Rocky+Saini&am=20&cu=INR&tn=Support+Developer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹20</a>
+              <a href="upi://pay?pa=codesefod@ybl&pn=Rocky+Saini&am=50&cu=INR&tn=Support+Developer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹50</a>
+              <a href="upi://pay?pa=codesefod@ybl&pn=Rocky+Saini&am=100&cu=INR&tn=Support+Developer" className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">₹100</a>
+              <button onClick={() => { navigator.clipboard.writeText('codesefod@ybl'); alert('UPI ID copied: codesefod@ybl') }} className="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-colors">Copy UPI</button>
             </div>
 
             <div className="text-center md:text-right relative group">
