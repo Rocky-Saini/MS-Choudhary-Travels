@@ -1110,7 +1110,10 @@ export default function AdminDashboard() {
         {/* BOOKINGS */}
         {!pageLoading && activeTab === 'bookings' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Bookings ({bookings.length})</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Bookings ({bookings.length})</h2>
+              {bookings.length > 0 && <Button variant="destructive" size="sm" onClick={async () => { if (!confirm('Delete ALL bookings? This cannot be undone.')) return; await fetch('/api/admin/clear-data?type=bookings', { method: 'DELETE', headers: headers() }); fetchBookings(); fetchDashboard() }}>🗑️ Clear All</Button>}
+            </div>
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3 items-end">
@@ -1177,7 +1180,10 @@ export default function AdminDashboard() {
         {/* FULL CAR REQUESTS */}
         {!pageLoading && activeTab === 'fullcar' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">🚗 Full Car Requests ({fullCarEntries.filter(e => e.status === 'PENDING').length} pending)</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">🚗 Full Car Requests ({fullCarEntries.filter(e => e.status === 'PENDING').length} pending)</h2>
+              {fullCarEntries.length > 0 && <Button variant="destructive" size="sm" onClick={async () => { if (!confirm('Delete ALL full car requests?')) return; await fetch('/api/admin/clear-data?type=fullcar', { method: 'DELETE', headers: headers() }); fetchFullCar() }}>🗑️ Clear All</Button>}
+            </div>
 
             <div className="space-y-4">
               {fullCarEntries.map((fc) => (
@@ -1328,7 +1334,10 @@ export default function AdminDashboard() {
         {/* WAITING LIST */}
         {!pageLoading && activeTab === 'waiting' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">⏳ Waiting List ({waitingEntries.length})</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">⏳ Waiting List ({waitingEntries.length})</h2>
+              {waitingEntries.length > 0 && <Button variant="destructive" size="sm" onClick={async () => { if (!confirm('Delete ALL waiting list entries?')) return; await fetch('/api/admin/clear-data?type=waiting', { method: 'DELETE', headers: headers() }); fetchWaiting() }}>🗑️ Clear All</Button>}
+            </div>
             <p className="text-sm text-gray-500">Customers waiting for a seat. Old entries auto-remove after their date passes.</p>
 
             {/* Date selector */}
