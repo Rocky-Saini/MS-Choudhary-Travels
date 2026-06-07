@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendTelegramNotification } from '@/lib/telegram'
 
 // User adds to waiting list
 export async function POST(request: NextRequest) {
@@ -28,6 +29,24 @@ export async function POST(request: NextRequest) {
         seats: seats || 1,
       },
     })
+
+    // Telegram notification
+    const adminUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mschoudharytravles.netlify.app'
+    const routeName = routeId === 'route-gangoh-delhi' ? 'Gangoh → Delhi' : 'Delhi → Gangoh'
+    await sendTelegramNotification(
+`⏳ *WAITING LIST - New Entry*
+
+👤 *${customerName}*
+📱 ${customerMobile}
+📍 Route: ${routeName}
+📅 Date: ${date}
+🕐 Preferred: ${preferredTime || 'Not specified'}
+📍 ${pickupPoint} → ${dropPoint}
+💺 ${seats} seat(s)
+
+⚠️ Action needed: Confirm seat when available
+
+👉 [Open Waiting List](${adminUrl}/admin/dashboard)`)
 
     return NextResponse.json({ success: true, entry })
   } catch (error) {

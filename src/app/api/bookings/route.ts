@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { razorpay } from '@/lib/razorpay'
+import { sendTelegramNotification } from '@/lib/telegram'
 
 const ADMIN_PHONE = '919027437997'
 
@@ -100,6 +101,24 @@ export async function POST(request: NextRequest) {
         pickupPoint, dropPoint, bookingCode: booking.bookingCode,
       })
       const whatsappLink = generateWhatsAppLink(customerMobile, whatsappMessage)
+
+      // Send Telegram notification to admin
+      const adminUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mschoudharytravles.netlify.app'
+      await sendTelegramNotification(
+`🆕 *NEW BOOKING*
+
+👤 *${customerName}*
+📱 ${customerMobile}
+🚗 Vehicle: ${trip.vehicle.vehicleNumber}
+👨‍✈️ Driver: ${trip.driver.name} (${trip.driver.mobile})
+📍 ${pickupPoint} → ${dropPoint}
+📅 ${tripDate} • 🕐 ${departureTime}
+💺 ${seats} seat(s) • 💰 ₹${totalFare}
+🔖 Code: ${booking.bookingCode}
+
+⚡ Status: CONFIRMED (Pay to driver)
+
+👉 [Open Admin Panel](${adminUrl}/admin/dashboard)`)
 
       return NextResponse.json({
         success: true,

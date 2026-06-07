@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendTelegramNotification } from '@/lib/telegram'
 
 // User submits full car booking request
 export async function POST(request: NextRequest) {
@@ -21,6 +22,22 @@ export async function POST(request: NextRequest) {
     const entry = await prisma.fullCarBooking.create({
       data: { customerName, customerMobile, pickupPoint, dropPoint, date: dateUTC, preferredTime: preferredTime || null },
     })
+
+    // Telegram notification
+    const adminUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mschoudharytravles.netlify.app'
+    await sendTelegramNotification(
+`🚗 *FULL CAR REQUEST*
+
+👤 *${customerName}*
+📱 ${customerMobile}
+📍 Pickup: ${pickupPoint}
+📍 Drop: ${dropPoint}
+📅 Date: ${date}
+🕐 Time: ${preferredTime || 'Not specified'}
+
+⚠️ *Action needed:* Approve & assign vehicle
+
+👉 [Open Full Car Tab](${adminUrl}/admin/dashboard)`)
 
     return NextResponse.json({ success: true, entry })
   } catch (error) {
