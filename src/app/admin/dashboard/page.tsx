@@ -169,7 +169,11 @@ export default function AdminDashboard() {
     } else { alert(data.error) }
   }
   const rejectFullCar = async (id: string) => {
-    await fetch('/api/admin/full-car-booking', { method: 'PUT', headers: headers(), body: JSON.stringify({ id, status: 'REJECTED' }) })
+    const res = await fetch('/api/admin/full-car-booking', { method: 'PUT', headers: headers(), body: JSON.stringify({ id, status: 'REJECTED' }) })
+    const data = await res.json()
+    if (data.whatsappLink) {
+      window.open(data.whatsappLink, '_blank')
+    }
     fetchFullCar()
   }
 

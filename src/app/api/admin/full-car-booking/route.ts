@@ -69,6 +69,28 @@ Thank you! 🙌
       }
     }
 
+    // If rejected, generate rejection WhatsApp
+    if (status === 'REJECTED') {
+      const message = `❌ *Full Car Request - Not Available*
+
+Hello ${entry.customerName},
+
+Sorry, we're unable to fulfill your full car booking request at this time.
+
+📍 ${entry.pickupPoint} → ${entry.dropPoint}
+📅 ${new Date(entry.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+No vehicle is available for your requested date/time. Please try again for a different date or book individual seats.
+
+For help call: +91 7830673603 (Ajeem)
+
+We apologize for the inconvenience.
+— MS Choudhary Travels`
+
+      const clean = entry.customerMobile.replace(/\D/g, '').slice(-10)
+      whatsappLink = `https://wa.me/91${clean}?text=${encodeURIComponent(message)}`
+    }
+
     return NextResponse.json({ success: true, entry, whatsappLink })
   } catch (error) {
     console.error('Error:', error)
