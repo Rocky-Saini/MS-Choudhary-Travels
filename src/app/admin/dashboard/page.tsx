@@ -168,11 +168,12 @@ export default function AdminDashboard() {
       fetchFullCar()
     } else { alert(data.error) }
   }
+  const [rejectWhatsAppLink, setRejectWhatsAppLink] = useState('')
   const rejectFullCar = async (id: string) => {
     const res = await fetch('/api/admin/full-car-booking', { method: 'PUT', headers: headers(), body: JSON.stringify({ id, status: 'REJECTED' }) })
     const data = await res.json()
     if (data.whatsappLink) {
-      window.open(data.whatsappLink, '_blank')
+      setRejectWhatsAppLink(data.whatsappLink)
     }
     fetchFullCar()
   }
@@ -1253,10 +1254,27 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {/* Reject WhatsApp Modal */}
+            {rejectWhatsAppLink && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setRejectWhatsAppLink('')} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <X className="w-8 h-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Request Rejected</h3>
+                  <p className="text-sm text-gray-500 mb-4">Send rejection notification to customer?</p>
+                  <a href={rejectWhatsAppLink} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl shadow-lg">
+                    📱 Send WhatsApp Notification
+                  </a>
+                  <div className="mt-4"><button onClick={() => setRejectWhatsAppLink('')} className="text-sm text-gray-500 hover:text-gray-700">Skip</button></div>
+                </div>
+              </div>
+            )}
           </div>
         )}
-
-        {/* BUS SERVICE */}
         {!pageLoading && activeTab === 'bus' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
