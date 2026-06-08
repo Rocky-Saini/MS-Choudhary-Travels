@@ -164,6 +164,13 @@ export default function TrackBooking() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {booking.status === 'PENDING' && (
+                  <div className="p-4 bg-amber-50 rounded-xl text-center">
+                    <p className="text-amber-700 font-medium">⏳ Awaiting Confirmation</p>
+                    <p className="text-xs text-amber-600 mt-1">Aapki booking request mil gayi hai. Hamari team call/WhatsApp par verify karke seat confirm karegi.</p>
+                    <p className="text-xs text-gray-500 mt-2">Jaldi confirmation ke liye call: +91 7830673603</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-400" />

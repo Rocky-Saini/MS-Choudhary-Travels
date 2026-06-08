@@ -3,41 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { razorpay } from '@/lib/razorpay'
 import { sendTelegramNotification } from '@/lib/telegram'
 
-const ADMIN_PHONE = '919027437997'
-
-function generateWhatsAppLink(phone: string, message: string): string {
-  const clean = phone.replace(/\D/g, '').slice(-10)
-  return `https://wa.me/91${clean}?text=${encodeURIComponent(message)}`
-}
-
-function buildConfirmationMessage(data: {
-  customerName: string; vehicleNumber: string; driverName: string; driverMobile: string
-  origin: string; destination: string; departureTime: string; date: string
-  seats: number; totalFare: number; pickupPoint: string; dropPoint: string; bookingCode: string
-}): string {
-  return `✅ *Seat Confirmed - Ready for Travel*
-
-Hello ${data.customerName}! 🙏
-
-Your booking is confirmed:
-🚗 Vehicle: ${data.vehicleNumber}
-👤 Driver: ${data.driverName} (${data.driverMobile})
-📍 Route: ${data.origin} → ${data.destination}
-📅 Date: ${data.date}
-🕐 Time: ${data.departureTime}
-💺 Seats: ${data.seats}
-💰 Fare: ₹${data.totalFare} (pay to driver)
-
-📍 Pickup: ${data.pickupPoint}
-📍 Drop: ${data.dropPoint}
-
-Booking Code: ${data.bookingCode}
-
-For help call: +91 7830673603 (Ajeem)
-Thank you! Have a safe journey. 🙌
-— MS Choudhary Travels`
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -59,7 +24,9 @@ export async function POST(request: NextRequest) {
 
     const totalFare = seats * trip.route.fare
 
-    // If advance NOT required — direct confirm, no payment needed now
+    // If advance NOT required — create a PENDING request that needs admin approval.
+    // Seat is NOT held here, so fake/unverified bookings can't block real seats.
+    // Admin verifies via call/WhatsApp, then confirms (seat assigned at that point).
     if (!trip.advanceRequired) {
       const booking = await prisma.booking.create({
         data: {
@@ -72,40 +39,24 @@ export async function POST(request: NextRequest) {
           totalFare,
           advancePaid: 0,
           remainingFare: totalFare,
-          status: 'CONFIRMED',
+          status: 'PENDING',
         },
-      })
-
-      // Update trip booked seats
-      await prisma.trip.update({
-        where: { id: tripId },
-        data: { bookedSeats: { increment: seats } },
       })
 
       await prisma.notification.create({
         data: {
           bookingId: booking.id,
           type: 'BOOKING_CONFIRMED',
-          message: `Booking confirmed! ${seats} seat(s) booked. Payment after journey.`,
+          message: `Booking request received. ${seats} seat(s). Awaiting admin confirmation.`,
         },
       })
 
       const departureTime = new Date(trip.departureTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
       const tripDate = new Date(trip.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })
 
-      const whatsappMessage = buildConfirmationMessage({
-        customerName, vehicleNumber: trip.vehicle.vehicleNumber,
-        driverName: trip.driver.name, driverMobile: trip.driver.mobile,
-        origin: trip.route.origin, destination: trip.route.destination,
-        departureTime, date: tripDate, seats, totalFare,
-        pickupPoint, dropPoint, bookingCode: booking.bookingCode,
-      })
-      const whatsappLink = generateWhatsAppLink(customerMobile, whatsappMessage)
-
-      // Send Telegram notification to admin
-      const adminUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mschoudharytravles.netlify.app'
+      // Send Telegram notification to admin — this one needs manual approval
       await sendTelegramNotification(
-`🆕 *NEW BOOKING*
+`🆕 *NEW BOOKING REQUEST* (needs approval)
 
 👤 *${customerName}*
 📱 ${customerMobile}
@@ -116,15 +67,15 @@ export async function POST(request: NextRequest) {
 💺 ${seats} seat(s) • 💰 ₹${totalFare}
 🔖 Code: ${booking.bookingCode}
 
-⚡ Status: CONFIRMED (Pay to driver)
+⏳ Status: PENDING — call/WhatsApp the customer to verify, then confirm.
 
-👉 [Open Admin Panel](${adminUrl}/admin/dashboard)`)
+👉 [Open Admin Panel](https://mschoudharytravles.netlify.app/admin/login)`)
 
       return NextResponse.json({
         success: true,
         requiresPayment: false,
+        pendingApproval: true,
         booking: { id: booking.id, bookingCode: booking.bookingCode },
-        whatsappLink,
       })
     }
 
