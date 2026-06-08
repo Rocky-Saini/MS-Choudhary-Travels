@@ -47,7 +47,17 @@ export async function DELETE(request: NextRequest) {
       await prisma.notification.deleteMany({ where: { bookingId: id } })
       await prisma.payment.deleteMany({ where: { bookingId: id } })
       const booking = await prisma.booking.delete({ where: { id } })
-      await prisma.trip.update({ where: { id: booking.tripId }, data: { bookedSeats: { decrement: booking.seats } } })
+      // Only release seats if this booking was actually holding them.
+      // PENDING bookings never reserved a seat, and CANCELLED ones were already released.
+      if (booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') {
+        const trip = await prisma.trip.findUnique({ where: { id: booking.tripId } })
+        if (trip) {
+          await prisma.trip.update({
+            where: { id: booking.tripId },
+            data: { bookedSeats: Math.max(0, trip.bookedSeats - booking.seats) },
+          })
+        }
+      }
       return NextResponse.json({ success: true })
     }
 

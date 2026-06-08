@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -7,7 +7,12 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600
 export const metadata: Metadata = {
   title: "MS Choudhary Travels - Premium Gangoh ↔ Delhi Cab & Bus Service",
   description: "Book your seat with MS Choudhary Travels. Premium Maruti Suzuki Ertiga fleet & Luxury Coach bus. Daily intercity service between Gangoh and Delhi.",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

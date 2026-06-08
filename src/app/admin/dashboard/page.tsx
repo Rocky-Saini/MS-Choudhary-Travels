@@ -442,17 +442,21 @@ export default function AdminDashboard() {
   const [assigningBooking, setAssigningBooking] = useState<BookingData | null>(null)
   const [assignTrips, setAssignTrips] = useState<DashboardData['todayTrips']>([])
   const [assignTripId, setAssignTripId] = useState<string | null>(null)
+  const [assignLoading, setAssignLoading] = useState(false)
 
   const openConfirmAssign = async (b: BookingData) => {
     setAssigningBooking(b)
     setAssignTrips([])
     setConfirmWhatsAppLink('')
-    // Load all trips for the booking's date
-    const dateStr = b.trip ? new Date(b.trip.date).toISOString().split('T')[0] : ''
+    setAssignLoading(true)
+    // Load all trips for the booking's date — use IST calendar date (trips are
+    // stored at midnight IST, so toISOString() would shift to the previous day).
+    const dateStr = b.trip ? new Date(b.trip.date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : ''
     if (dateStr) {
       const r = await fetch(`/api/admin/dashboard?date=${dateStr}`, { headers: headers() })
       if (r.ok) { const d = await r.json(); setAssignTrips(d.todayTrips || []) }
     }
+    setAssignLoading(false)
   }
 
   const confirmAssign = async (tripId: string) => {
@@ -1286,7 +1290,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">Confirm & Assign Cab</h3>
-                      <p className="text-sm text-gray-500">{assigningBooking.customerName} • {assigningBooking.seats} seat(s) • {assigningBooking.trip ? new Date(assigningBooking.trip.date).toLocaleDateString('en-IN') : ''}</p>
+                      <p className="text-sm text-gray-500">{assigningBooking.customerName} • {assigningBooking.seats} seat(s) • {assigningBooking.trip ? new Date(assigningBooking.trip.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}</p>
                     </div>
                     <button onClick={() => setAssigningBooking(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X className="w-4 h-4" /></button>
                   </div>
@@ -1294,7 +1298,8 @@ export default function AdminDashboard() {
                   {(() => {
                     const origTripId = assigningBooking.tripId
                     const sorted = [...assignTrips].sort((a, b) => (a.id === origTripId ? -1 : b.id === origTripId ? 1 : 0))
-                    if (sorted.length === 0) return <p className="text-sm text-gray-500 text-center py-6">Loading trips...</p>
+                    if (assignLoading) return <p className="text-sm text-gray-500 text-center py-6">Loading trips...</p>
+                    if (sorted.length === 0) return <p className="text-sm text-gray-500 text-center py-6">Is date par koi trip nahi hai. Pehle trip create karein.</p>
                     return (
                       <div className="space-y-2">
                         {sorted.map(t => {

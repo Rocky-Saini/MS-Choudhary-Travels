@@ -11,7 +11,7 @@ async function main() {
 
   for (const trip of trips) {
     const activeBookings = await prisma.booking.findMany({
-      where: { tripId: trip.id, status: { in: ["CONFIRMED", "COMPLETED", "PENDING"] } },
+      where: { tripId: trip.id, status: { in: ["CONFIRMED", "COMPLETED"] } },
       select: { seats: true },
     });
     const correctSeats = activeBookings.reduce((acc, b) => acc + b.seats, 0);
