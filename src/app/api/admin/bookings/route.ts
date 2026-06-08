@@ -154,9 +154,9 @@ Thank you! Have a safe journey. 🙌
     })
 
     if (status === 'CANCELLED') {
-      // Only release seats if the booking was actually holding them (CONFIRMED/COMPLETED).
+      // Only release seats if the booking was actually holding them.
       // PENDING requests never held a seat, so nothing to release.
-      if (existing.status === 'CONFIRMED' || existing.status === 'COMPLETED') {
+      if (existing.status !== 'PENDING') {
         const trip = await prisma.trip.findUnique({ where: { id: booking.tripId } })
         if (trip && trip.bookedSeats > 0) {
           await prisma.trip.update({
