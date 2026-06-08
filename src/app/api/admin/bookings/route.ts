@@ -85,10 +85,14 @@ export async function PUT(request: NextRequest) {
 
     if (status === 'CANCELLED') {
       // Only decrement seats if the booking was previously occupying seats (not already cancelled)
-      await prisma.trip.update({
-        where: { id: booking.tripId },
-        data: { bookedSeats: { decrement: booking.seats } },
-      })
+      // Only decrement if booking was actually occupying seats
+      const trip = await prisma.trip.findUnique({ where: { id: booking.tripId } })
+      if (trip && trip.bookedSeats > 0) {
+        await prisma.trip.update({
+          where: { id: booking.tripId },
+          data: { bookedSeats: Math.max(0, trip.bookedSeats - booking.seats) },
+        })
+      }
 
       const tripDate = new Date(booking.trip.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })
       const departureTime = new Date(booking.trip.departureTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })

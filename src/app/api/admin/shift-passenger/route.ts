@@ -37,9 +37,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Decrement old trip seats
+    const oldTrip = await prisma.trip.findUnique({ where: { id: booking.tripId } })
     await prisma.trip.update({
       where: { id: booking.tripId },
-      data: { bookedSeats: { decrement: booking.seats } },
+      data: { bookedSeats: Math.max(0, (oldTrip?.bookedSeats || 0) - booking.seats) },
     })
 
     // Increment new trip seats
